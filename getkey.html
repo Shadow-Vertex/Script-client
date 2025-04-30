@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Get Executor Key</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #keyBox {
+      display: none;
+      background: #eee;
+      padding: 10px;
+      margin-top: 20px;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔐 Get Executor Key</h2>
+    <p id="status">Hoàn thành nhiệm vụ để nhận key (cần 3 lần).</p>
+    <button id="getKeyBtn" disabled>Get Key</button>
+    <div id="keyBox"></div>
+  </div>
+
+  <script>
+    const btn = document.getElementById("getKeyBtn");
+    const status = document.getElementById("status");
+    const keyBox = document.getElementById("keyBox");
+    const TASK_URL = "https://lootdest.org/s?iiu8wR7L"; // Link nhiệm vụ
+
+    function generateKey(length = 12) {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      let result = "";
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return "Shadowvertex_" + result;
+    }
+
+    // Lấy số lần làm nhiệm vụ
+    let count = parseInt(localStorage.getItem("key_attempts") || "0");
+
+    // Kiểm tra và tạo key nếu đủ 3 lần làm nhiệm vụ
+    let KEY_VALUE = localStorage.getItem("shadow_key");
+    if (!KEY_VALUE && count >= 3) {
+      KEY_VALUE = generateKey();
+      localStorage.setItem("shadow_key", KEY_VALUE);
+    }
+
+    function updateUI() {
+      if (count >= 3 && KEY_VALUE) {
+        status.innerText = "🎉 Bạn đã hoàn thành đủ nhiệm vụ!";
+        keyBox.innerText = "KEY: " + KEY_VALUE;
+        keyBox.style.display = "block";
+        btn.disabled = false;
+        btn.innerText = "✔ Đã Nhận Key";
+      } else {
+        status.innerText = `🔁 Bạn đã hoàn thành ${count}/3 nhiệm vụ.`;
+        keyBox.style.display = "none";
+        keyBox.innerText = "";
+        btn.disabled = true; // Disable nút nếu chưa đủ 3 lần
+        btn.innerText = "Get Key";
+      }
+    }
+
+    btn.onclick = () => {
+      if (count < 3) {
+        count++;
+        localStorage.setItem("key_attempts", count);
+        updateUI();
+        setTimeout(() => {
+          window.location.href = TASK_URL; // Mở nhiệm vụ
+        }, 500);
+      }
+    };
+
+    updateUI(); // Khi tải trang
+  </script>
+</body>
+</html>

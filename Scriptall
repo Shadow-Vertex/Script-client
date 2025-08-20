@@ -41,7 +41,7 @@ local FluentButton = Instance.new("TextButton")
 FluentButton.Size = UDim2.new(0,140,0,50)
 FluentButton.Position = UDim2.new(0,160,0,50)
 FluentButton.BackgroundColor3 = Color3.fromRGB(60,179,113)
-FluentButton.Text = "2️⃣ Fluent UI"
+FluentButton.Text = "2️⃣ Fluent UI(🔴)"
 FluentButton.TextColor3 = Color3.fromRGB(255,255,255)
 FluentButton.Font = Enum.Font.SourceSansBold
 FluentButton.TextScaled = true
@@ -70,7 +70,7 @@ RayButton.MouseButton1Click:Connect(function()
     -- 🥭 TAB BLOXFRUIT
     local BloxTab = Window:CreateTab("🥭 BloxFruit")
     BloxTab:CreateButton({
-        Name = "⚡ Speed Hub X (Auto Key)",
+        Name = "⚡ Speed Hub X (NoKey)",
         Callback = function()
             script_key="BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK";
             loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
@@ -125,6 +125,7 @@ RayButton.MouseButton1Click:Connect(function()
         end,
     })
     AdminTab:CreateLabel("...Coming Soon...")
+    AdminTab:CreateLabel("...mobi ko nên dùng...")
 
     -- 📌 TAB CREDITS
     local CreditTab = Window:CreateTab("📌 Credits")

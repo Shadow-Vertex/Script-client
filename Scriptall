@@ -1,0 +1,149 @@
+-- =========================================================
+-- ⚡ All SDVT Executor Script (Vote Menu 1 or 2)
+-- =========================================================
+
+-- Hộp thoại vote chọn menu
+local choice = nil
+repeat
+    choice = tonumber(game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("Chat") and 
+        tonumber(string.match(game:GetService("Players").LocalPlayer.PlayerGui.Chat.Frame.ChatBarParentFrame.Frame.Box.Text, "%d")))
+    task.wait(1)
+until choice == 1 or choice == 2
+
+-- =========================================================
+-- MENU 1: Rayfield UI
+-- =========================================================
+if choice == 1 then
+    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+    local Window = Rayfield:CreateWindow({
+        Name = "✨ All SDVT Executor Script ✨",
+        LoadingTitle = "SDVT Executor",
+        LoadingSubtitle = "by SDVT Team",
+        ConfigurationSaving = {Enabled = false},
+        Discord = {Enabled = false},
+        KeySystem = false
+    })
+
+    -- 🥭 TAB BLOXFRUIT
+    local BloxTab = Window:CreateTab("🥭 BloxFruit")
+    BloxTab:CreateButton({
+        Name = "⚡ Speed Hub X (Auto Key)",
+        Callback = function()
+            script_key="BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK";
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
+        end,
+    })
+    BloxTab:CreateButton({
+        Name = "🔥 Vxeze Hub",
+        Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Dex-Bear/Vxezehub/refs/heads/main/VxezeHubMain"))()
+        end,
+    })
+    BloxTab:CreateButton({
+        Name = "🌊 Tsuo Hub",
+        Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Tsuo7/TsuoHub/main/Tsuoscripts"))()
+        end,
+    })
+    BloxTab:CreateLabel("...Coming Soon...")
+
+    -- 🌱 TAB Grow A Garden
+    local GardenTab = Window:CreateTab("🌱 Grow A Garden")
+    GardenTab:CreateButton({
+        Name = "⚡ Speed Hub X (Auto Key)",
+        Callback = function()
+            script_key="BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK";
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
+        end,
+    })
+    GardenTab:CreateLabel("...Coming Soon...")
+
+    -- 🌲 TAB 99 Nights in the Forest
+    local ForestTab = Window:CreateTab("🌲 99 Nights in the Forest")
+    ForestTab:CreateButton({
+        Name = "🌌 BONKHUB (Key)",
+        Callback = function()
+            --[[ if need to use kaitan mode put
+            getgenv().ScriptMode = "Kaitan"
+            ]]--
+            local success = pcall(function()
+                loadstring(game:HttpGet("https://bonkhub.online/Loader.lua", true))()
+            end)
+            if not success then
+                loadstring(game:HttpGet("https://toonza555.github.io/BONKHUB-Loader/", true))()
+            end
+        end,
+    })
+    ForestTab:CreateLabel("...Coming Soon...")
+
+    -- 👑 TAB ADMIN
+    local AdminTab = Window:CreateTab("👑 Admin Create Script")
+    AdminTab:CreateButton({
+        Name = "🔍 Dark Dex Explorer",
+        Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/peyton2465/Dex/master/out.lua"))()
+        end,
+    })
+    AdminTab:CreateLabel("...Coming Soon...")
+
+    -- 📌 TAB CREDITS
+    local CreditTab = Window:CreateTab("📌 Credits")
+    CreditTab:CreateLabel("Made by: SDVT Team")
+end
+
+
+-- =========================================================
+-- MENU 2: Fluent UI + Icon Toggle
+-- =========================================================
+if choice == 2 then
+    -- 🖼 Icon mở menu Fluent
+    local ScreenGui = Instance.new("ScreenGui")
+    local ImageButton = Instance.new("ImageButton")
+    local UICorner = Instance.new("UICorner")
+
+    ScreenGui.Name = "FluentToggleIcon"
+    ScreenGui.Parent = game.CoreGui
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    ImageButton.Parent = ScreenGui
+    ImageButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    ImageButton.BorderSizePixel = 0
+    ImageButton.Position = UDim2.new(0.1, 0, 0.2, 0)
+    ImageButton.Size = UDim2.new(0, 40, 0, 40)
+    ImageButton.Draggable = true
+    ImageButton.Image = "http://www.roblox.com/asset/?id=111542004281084"
+
+    UICorner.CornerRadius = UDim.new(1, 0)
+    UICorner.Parent = ImageButton
+
+    ImageButton.MouseButton1Click:Connect(function()
+        game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.End, false, game)
+        task.wait()
+        game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.End, false, game)
+    end)
+
+    -- Tạo Fluent UI
+    local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+    local Window2 = Fluent:CreateWindow({
+        Title = "🔥 All SDVT Executor Script (Fluent UI)",
+        SubTitle = "By SDVT Team",
+        TabWidth = 180
+    })
+
+    -- 🏠 Tab chính
+    local Main0 = Window2:AddTab({Title="🏠 Main"})
+    Main0:AddButton({
+        Title="Discord",
+        Description="SDVT Official | Delay",
+        Callback=function()
+            setclipboard("??????")
+        end
+    })
+    Main0:AddButton({
+        Title="Youtuber",
+        Description="SDVT Official",
+        Callback=function()
+            setclipboard("https://www.youtube.com/@hairoblox123")
+        end
+    })
+end

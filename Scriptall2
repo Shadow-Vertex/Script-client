@@ -1,0 +1,191 @@
+-- =========================================================
+-- ✨ All SDVT Executor Script ✨
+-- By SDVT Team
+-- =========================================================
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+
+-- =============================
+-- GUI Vote chọn Menu
+-- =============================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MenuVoteGui"
+ScreenGui.Parent = CoreGui
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 300, 0, 150)
+Frame.Position = UDim2.new(0.5, -150, 0.4, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = Frame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Position = UDim2.new(0, 0, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Chọn Menu UI"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 22
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Parent = Frame
+
+-- Hàm tạo nút
+local function CreateButton(text, yPos, callback)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(0, 260, 0, 40)
+    Button.Position = UDim2.new(0, 20, 0, yPos)
+    Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    Button.Text = text
+    Button.TextColor3 = Color3.fromRGB(255,255,255)
+    Button.Font = Enum.Font.Gotham
+    Button.TextSize = 18
+    Button.Parent = Frame
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = Button
+
+    Button.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+        callback()
+    end)
+end
+
+-- =============================
+-- Nút 1: Rayfield UI
+-- =============================
+CreateButton("1️⃣ Rayfield UI", 50, function()
+    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+    local Window = Rayfield:CreateWindow({
+       Name = "✨ All SDVT Executor Script ✨",
+       LoadingTitle = "SDVT Executor",
+       LoadingSubtitle = "by SDVT Team",
+       ConfigurationSaving = {Enabled = false},
+       Discord = {Enabled = false},
+       KeySystem = false
+    })
+
+    -- 🥭 TAB BLOXFRUIT
+    local BloxTab = Window:CreateTab("🥭 BloxFruit")
+    BloxTab:CreateButton({Name = "⚡ Speed Hub X (Auto Key)", Callback = function()
+        script_key="BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK";
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
+    end})
+    BloxTab:CreateButton({Name = "🔥 Vxeze Hub", Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Dex-Bear/Vxezehub/refs/heads/main/VxezeHubMain"))()
+    end})
+    BloxTab:CreateButton({Name = "🌊 Tsuo Hub", Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Tsuo7/TsuoHub/main/Tsuoscripts"))()
+    end})
+    BloxTab:CreateLabel("...Coming Soon...")
+
+    -- 🌱 TAB Grow A Garden
+    local GardenTab = Window:CreateTab("🌱 Grow A Garden")
+    GardenTab:CreateButton({Name = "⚡ Speed Hub X (Auto Key)", Callback = function()
+        script_key="BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK";
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
+    end})
+    GardenTab:CreateLabel("...Coming Soon...")
+
+    -- 🌲 TAB 99 Nights in the Forest
+    local ForestTab = Window:CreateTab("🌲 99 Nights in the Forest")
+    ForestTab:CreateButton({Name = "🌌 BONKHUB (Key)", Callback = function()
+        local success = pcall(function()
+            loadstring(game:HttpGet("https://bonkhub.online/Loader.lua", true))()
+        end)
+        if not success then
+            loadstring(game:HttpGet("https://toonza555.github.io/BONKHUB-Loader/", true))()
+        end
+    end})
+    ForestTab:CreateLabel("...Coming Soon...")
+
+    -- 👑 TAB ADMIN
+    local AdminTab = Window:CreateTab("👑 Admin Create Script")
+    AdminTab:CreateButton({Name = "🔍 Dark Dex Explorer", Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/peyton2465/Dex/master/out.lua"))()
+    end})
+    AdminTab:CreateLabel("...Coming Soon...")
+
+    -- 📌 TAB CREDITS
+    local CreditTab = Window:CreateTab("📌 Credits")
+    CreditTab:CreateLabel("Made by: SDVT Team")
+end)
+
+-- =============================
+-- Nút 2: Fluent UI
+-- =============================
+CreateButton("2️⃣ Fluent UI", 100, function()
+    local ScreenGui2 = Instance.new("ScreenGui")
+    ScreenGui2.Name = "FluentToggleIcon"
+    ScreenGui2.Parent = game.CoreGui
+
+    local ImageButton = Instance.new("ImageButton")
+    ImageButton.Parent = ScreenGui2
+    ImageButton.BackgroundColor3 = Color3.fromRGB(20,20,20)
+    ImageButton.Position = UDim2.new(0.1,0,0.2,0)
+    ImageButton.Size = UDim2.new(0,40,0,40)
+    ImageButton.Image = "rbxassetid://11154200428"
+    local UICorner2 = Instance.new("UICorner")
+    UICorner2.CornerRadius = UDim.new(1,0)
+    UICorner2.Parent = ImageButton
+
+    ImageButton.MouseButton1Click:Connect(function()
+        game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.End, false, game)
+        task.wait()
+        game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.End, false, game)
+    end)
+
+    local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+    local Window2 = Fluent:CreateWindow({Title = "🔥 All SDVT Executor Script (Fluent UI)", SubTitle = "By SDVT Team", TabWidth = 180})
+
+    -- 🥭 BloxFruit
+    local Blox2 = Window2:AddTab({Title="🥭 BloxFruit"})
+    Blox2:AddButton({Title="⚡ Speed Hub X (Auto Key)", Callback=function()
+        script_key="BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK";
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
+    end})
+    Blox2:AddButton({Title="🔥 Vxeze Hub", Callback=function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Dex-Bear/Vxezehub/refs/heads/main/VxezeHubMain"))()
+    end})
+    Blox2:AddButton({Title="🌊 Tsuo Hub", Callback=function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Tsuo7/TsuoHub/main/Tsuoscripts"))()
+    end})
+    Blox2:AddParagraph("...Coming Soon...")
+
+    -- 🌱 Grow A Garden
+    local Garden2 = Window2:AddTab({Title="🌱 Grow A Garden"})
+    Garden2:AddButton({Title="⚡ Speed Hub X (Auto Key)", Callback=function()
+        script_key="BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK";
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
+    end})
+    Garden2:AddParagraph("...Coming Soon...")
+
+    -- 🌲 99 Nights in the Forest
+    local Forest2 = Window2:AddTab({Title="🌲 99 Nights in the Forest"})
+    Forest2:AddButton({Title="🌌 BONKHUB (Key)", Callback=function()
+        local success = pcall(function()
+            loadstring(game:HttpGet("https://bonkhub.online/Loader.lua", true))()
+        end)
+        if not success then
+            loadstring(game:HttpGet("https://toonza555.github.io/BONKHUB-Loader/", true))()
+        end
+    end})
+    Forest2:AddParagraph("...Coming Soon...")
+
+    -- 👑 Admin
+    local Admin2 = Window2:AddTab({Title="👑 Admin Tools"})
+    Admin2:AddButton({Title="🔍 Dark Dex Explorer", Callback=function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/peyton2465/Dex/master/out.lua"))()
+    end})
+    Admin2:AddParagraph("...Coming Soon...")
+
+    -- 📌 Credits
+    local Credit2 = Window2:AddTab({Title="📌 Credits"})
+    Credit2:AddParagraph("Made by: SDVT Team")
+end)

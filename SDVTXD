@@ -186,7 +186,7 @@ local function OpenRayfieldUI()
     AdminTab:CreateButton({
         Name = "🔍 Dark Dex Explorer",
         Callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/peyton2465/Dex/master/out.lua"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/memeenjoyer43/darkdex/refs/heads/main/script"))()
         end,
     })
     AdminTab:CreateLabel("...Coming Soon...")

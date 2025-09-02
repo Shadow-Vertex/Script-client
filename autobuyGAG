@@ -1,0 +1,142 @@
+-- Tải thư viện Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Tạo cửa sổ giao diện
+local Window = Rayfield:CreateWindow({
+    Name = "Giao Diện Grow A Garden",
+    LoadingTitle = "Đang Tải Giao Diện...",
+    LoadingSubtitle = "Tạo bởi SDVT",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "GrowAGardenConfig",
+        FileName = "Config"
+    }
+})
+
+-- Tab Stock
+local StockTab = Window:CreateTab("Stock", 4483362458)
+
+-- Danh sách crops
+local cropList = {
+    "Carrot","Strawberry","Blueberry","Orange Tulip","Tomato",
+    "Corn","Daffodil","Watermelon","Pumpkin","Apple","Bamboo",
+    "Coconut","Cactus","Dragon Fruit","Mango","Grape","Mushroom",
+    "Pepper","Cacao","Beanstalk","Ember Lily","Sugar Apple",
+    "Burning Bud","Giant Pinecone","Elder Strawberry","Romanesco"
+}
+
+-- Toggle Auto Buy All Crops
+StockTab:CreateToggle({
+    Name = "Auto Buy All Crops",
+    CurrentValue = false,
+    Flag = "AutoBuyAll",
+    Callback = function(Value)
+        _G.AutoBuyAll = Value
+        if Value then
+            spawn(function()
+                while _G.AutoBuyAll do
+                    for _, crop in ipairs(cropList) do
+                        pcall(function()
+                            game:GetService("ReplicatedStorage"):WaitForChild("GameEvents"):WaitForChild("BuySeedStock"):FireServer("Tier 1", crop)
+                        end)
+                        wait(0.01)
+                    end
+                    wait(0.05)
+                end
+            end)
+        end
+    end
+})
+
+-- Danh sách Gear/Items
+local gearList = {
+    "Watering Can","Trading Ticket","Basic Sprinkler","Advanced Sprinkler",
+    "Medium Treat","Medium Toy","Godly Sprinkler","Master Sprinkler",
+    "Level Up Lollipop","Grandmaster Sprinkler"
+}
+
+-- Toggle Buy Best Gear
+StockTab:CreateToggle({
+    Name = "Buy Best Gear",
+    CurrentValue = false,
+    Flag = "BuyBestGear",
+    Callback = function(Value)
+        _G.BuyBestGear = Value
+        if Value then
+            spawn(function()
+                while _G.BuyBestGear do
+                    for _, gear in ipairs(gearList) do
+                        local args = {gear}
+                        pcall(function()
+                            game:GetService("ReplicatedStorage"):WaitForChild("GameEvents"):WaitForChild("BuyGearStock"):FireServer(unpack(args))
+                        end)
+                        wait(0.01)
+                    end
+                    wait(0.05)
+                end
+            end)
+        end
+    end
+})
+
+-- Danh sách Egg
+local eggList = {
+    "Common Egg","Uncommon Egg","Rare Egg","Legendary Egg","Mythical Egg","Bug Egg"
+}
+
+-- Toggle Buy All Egg
+StockTab:CreateToggle({
+    Name = "Buy All Egg",
+    CurrentValue = false,
+    Flag = "BuyAllEgg",
+    Callback = function(Value)
+        _G.BuyAllEgg = Value
+        if Value then
+            spawn(function()
+                while _G.BuyAllEgg do
+                    for _, egg in ipairs(eggList) do
+                        local args = {egg}
+                        pcall(function()
+                            game:GetService("ReplicatedStorage"):WaitForChild("GameEvents"):WaitForChild("BuyPetEgg"):FireServer(unpack(args))
+                        end)
+                        wait(0.05)
+                    end
+                    wait(0.1)
+                end
+            end)
+        end
+    end
+})
+
+-- Hiển thị thông tin tác giả
+StockTab:CreateLabel("Giao diện bởi SDVT - Phiên bản 1.0")
+
+-- Tab Farm
+local FarmTab = Window:CreateTab("Farm", 4483362458)
+
+-- Toggle Auto Collect Fruits
+FarmTab:CreateToggle({
+    Name = "Auto Collect Fruits",
+    CurrentValue = false,
+    Flag = "AutoCollectFruits",
+    Callback = function(Value)
+        _G.AutoCollectFruits = Value
+        if Value then
+            spawn(function()
+                while _G.AutoCollectFruits do
+                    local fruitsFolder = workspace:FindFirstChild("Fruits")
+                    if fruitsFolder then
+                        for _, fruit in ipairs(fruitsFolder:GetChildren()) do
+                            pcall(function()
+                                game:GetService("ReplicatedStorage"):WaitForChild("GameEvents"):WaitForChild("CollectFruit"):FireServer(fruit)
+                            end)
+                        end
+                    end
+                    wait(0.05) -- delay giữa các lần check
+                end
+            end)
+        end
+    end
+})
+
+FarmTab:CreateLabel("Auto Farm Fruits bởi SDVT")

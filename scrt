@@ -1,15 +1,90 @@
--- Đặt key
+-- Auto rejoin: tìm server khác rồi TeleportToPlaceInstance, fallback Teleport nếu cần
+-- By ChatGPT
+
+math.randomseed(tick())
+
+-- set key + load hub
 getgenv().script_key = "BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK"
+local ok, err = pcall(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
+end)
+if not ok then
+    warn("Load hub failed:", err)
+end
 
--- Load script
-loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local player = Players.LocalPlayer
 
--- Sau 15s tự động rejoin server hiện tại
+local function notify(title, text)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {Title = title, Text = text, Duration = 4})
+    end)
+end
+
+-- Tìm server khác (không phải JobId hiện tại) có slot trống
+local function findOtherServer()
+    local candidates = {}
+    local cursor = nil
+    local tries = 0
+    repeat
+        local url = "https://games.roblox.com/v1/games/"..tostring(game.PlaceId).."/servers/Public?limit=100"
+        if cursor and cursor ~= "" then
+            url = url .. "&cursor=" .. tostring(cursor)
+        end
+
+        local resOk, res = pcall(function() return game:HttpGet(url) end)
+        if not resOk or not res or res == "" then
+            return nil, "HttpGet failed: "..tostring(res)
+        end
+
+        local data
+        local decodeOk, decodeErr = pcall(function() data = HttpService:JSONDecode(res) end)
+        if not decodeOk then
+            return nil, "JSON decode failed: "..tostring(decodeErr)
+        end
+
+        for _, s in ipairs(data.data or {}) do
+            -- s.id là server id, s.playing/s.maxPlayers
+            if tostring(s.id) ~= tostring(game.JobId) and (tonumber(s.playing) < tonumber(s.maxPlayers)) then
+                table.insert(candidates, s.id)
+            end
+        end
+
+        cursor = data.nextPageCursor
+        tries = tries + 1
+    until not cursor or cursor == "" or tries >= 6
+
+    if #candidates == 0 then
+        return nil, "Không tìm được server khác trống."
+    end
+
+    return candidates[math.random(1, #candidates)]
+end
+
+-- Hàm attempt rejoin với fallback
+local function attemptRejoin()
+    notify("Rejoin", "Bắt đầu tìm server để tham gia lại...")
+    local serverId, errMsg = findOtherServer()
+    if serverId then
+        local tOk, tErr = pcall(function()
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, serverId, player)
+        end)
+        if not tOk then
+            warn("TeleportToPlaceInstance lỗi:", tErr)
+            notify("Rejoin", "TeleportToPlaceInstance lỗi — thử Teleport()...")
+            pcall(function() TeleportService:Teleport(game.PlaceId) end)
+        end
+    else
+        warn("Không tìm server:", errMsg)
+        notify("Rejoin", "Không tìm server khác — thử Teleport()...")
+        pcall(function() TeleportService:Teleport(game.PlaceId) end)
+    end
+end
+
+-- Delay 15s trước khi rejoin (theo yêu cầu ban đầu)
 task.delay(15, function()
-    local TeleportService = game:GetService("TeleportService")
-    local Players = game:GetService("Players")
-    local player = Players.LocalPlayer
-    
-    -- Cách rejoin chính xác
-    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+    attemptRejoin()
 end)

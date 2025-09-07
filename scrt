@@ -1,53 +1,15 @@
---// Auto Server Hop từ XX:00 đến XX:20, delay 15s mỗi lần
---// By ChatGPT x SDVT
-
--- Load Hub trước
+-- Đặt key
 getgenv().script_key = "BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK"
+
+-- Load script
 loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
 
-local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-
--- Hàm lấy 1 server ngẫu nhiên
-local function getRandomServer()
-    local url = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
-    local servers = HttpService:JSONDecode(game:HttpGet(url))
-    local possible = {}
-
-    for _, s in ipairs(servers.data) do
-        if s.playing < s.maxPlayers then
-            table.insert(possible, s.id)
-        end
-    end
-
-    if #possible > 0 then
-        return possible[math.random(1, #possible)]
-    else
-        return nil
-    end
-end
-
--- Hàm hop server khác
-local function hopServer()
-    local serverId = getRandomServer()
-    if serverId then
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, serverId, player)
-    else
-        warn("⚠ Không tìm được server trống để hop!")
-    end
-end
-
--- Vòng lặp hop theo thời gian
-task.spawn(function()
-    while task.wait(15) do
-        local minuteNow = tonumber(os.date("%M"))
-        if minuteNow >= 0 and minuteNow <= 20 then
-            hopServer()
-        else
-            warn("⏰ Đã quá khung giờ (00–20), ngừng hop.")
-            break
-        end
-    end
+-- Sau 15s tự động rejoin
+task.delay(15, function()
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    
+    -- Rejoin server
+    TeleportService:Teleport(game.PlaceId, player)
 end)

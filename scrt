@@ -98,6 +98,6 @@ local function attemptRejoin()
 end
 
 -- Delay 15s trước khi rejoin
-task.delay(15, function()
+task.delay(20, function()
     attemptRejoin()
 end)

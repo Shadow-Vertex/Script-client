@@ -1,4 +1,4 @@
--- Auto rejoin: tìm server khác rồi TeleportToPlaceInstance, fallback Teleport nếu cần
+-- Auto rejoin + Auto click giữa màn hình 10 lần/giây
 -- By ChatGPT
 
 math.randomseed(tick())
@@ -16,13 +16,27 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
+local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
 
 local function notify(title, text)
     pcall(function()
         StarterGui:SetCore("SendNotification", {Title = title, Text = text, Duration = 4})
     end)
 end
+
+-- Auto click giữa màn hình 10 lần/giây
+task.spawn(function()
+    while task.wait(0.1) do -- 0.1s = 10 lần/giây
+        pcall(function()
+            local center = camera.ViewportSize / 2
+            VirtualUser:Button1Down(center)
+            task.wait(0.02) -- giữ chuột xuống 0.02s
+            VirtualUser:Button1Up(center)
+        end)
+    end
+end)
 
 -- Tìm server khác (không phải JobId hiện tại) có slot trống
 local function findOtherServer()
@@ -47,7 +61,6 @@ local function findOtherServer()
         end
 
         for _, s in ipairs(data.data or {}) do
-            -- s.id là server id, s.playing/s.maxPlayers
             if tostring(s.id) ~= tostring(game.JobId) and (tonumber(s.playing) < tonumber(s.maxPlayers)) then
                 table.insert(candidates, s.id)
             end
@@ -84,7 +97,7 @@ local function attemptRejoin()
     end
 end
 
--- Delay 15s trước khi rejoin (theo yêu cầu ban đầu)
+-- Delay 15s trước khi rejoin
 task.delay(15, function()
     attemptRejoin()
 end)

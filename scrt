@@ -4,12 +4,12 @@ getgenv().script_key = "BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK"
 -- Load script
 loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
 
--- Sau 15s tự động rejoin
-task.delay(20, function()
+-- Sau 15s tự động rejoin server hiện tại
+task.delay(15, function()
     local TeleportService = game:GetService("TeleportService")
     local Players = game:GetService("Players")
     local player = Players.LocalPlayer
     
-    -- Rejoin server
-    TeleportService:Teleport(game.PlaceId, player)
+    -- Cách rejoin chính xác
+    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
 end)

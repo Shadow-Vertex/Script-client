@@ -1,0 +1,15 @@
+-- Đặt key
+getgenv().script_key = "BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK"
+
+-- Load script
+loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
+
+-- Sau 15s tự động rejoin
+task.delay(15, function()
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    
+    -- Rejoin server
+    TeleportService:Teleport(game.PlaceId, player)
+end)

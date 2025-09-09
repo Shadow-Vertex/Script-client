@@ -12,8 +12,7 @@ local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 -- ⚙️ Cấu hình
-getgenv().AutoLoad = false -- 🔴 tắt auto load (true = bật, false = bật)
-local SCRIPT_URL = "https://raw.githubusercontent.com/Shadow-Vertex/Script-client/refs/heads/main/scrt"
+getgenv().AutoLoad = false -- 🔴 tắt auto load (true = bật, false = tắt)
 
 -- 🟢 Key & Load Speed Hub X
 getgenv().script_key = "BvMJeyLAFaEyOrZzQKEubHVRPVeMVzSn"
@@ -105,14 +104,12 @@ local function attemptRejoin()
     end
 end
 
--- 🕒 Sau 20s sẽ rejoin và (nếu AutoLoad = true) thì load lại script
-task.delay(20, function()
+-- 🕒 Sau 15s sẽ rejoin
+task.delay(15, function()
     attemptRejoin()
-    task.wait(3)
+    task.wait(0)
     if getgenv().AutoLoad then
-        pcall(function()
-            loadstring(game:HttpGet(SCRIPT_URL))()
-        end)
+        -- AutoLoad bật thì tự load lại script ngoài, tuỳ bạn muốn thêm URL sau này
     else
         notify("AutoLoad", "Đang tắt, không tự load lại script.")
     end

@@ -1,16 +1,7 @@
--- Auto rejoin + Auto click giữa màn hình 10 lần/giây
+-- Auto reload script khi rejoin/hop sv + Auto click giữa màn hình
 -- By ChatGPT
 
 math.randomseed(tick())
-
--- set key + load hub
-getgenv().script_key="BvMJeyLAFaEyOrZzQKEubHVRPVeMVzSn"
-local ok, err = pcall(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
-end)
-if not ok then
-    warn("Load hub failed:", err)
-end
 
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -20,84 +11,100 @@ local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
+-- ⚙️ Cấu hình
+getgenv().AutoLoad = false -- 🔴 tắt auto load (true = bật, false = tắt)
+local SCRIPT_URL = "https://raw.githubusercontent.com/Shadow-Vertex/Script-client/refs/heads/main/scrt"
+
 local function notify(title, text)
     pcall(function()
         StarterGui:SetCore("SendNotification", {Title = title, Text = text, Duration = 4})
     end)
 end
 
--- Auto click giữa màn hình 10 lần/giây
+-- 🖱 Click 1 lần giữa màn hình khi script chạy
 task.spawn(function()
-    while task.wait(0.1) do -- 0.1s = 10 lần/giây
+    task.wait(0.5)
+    local center = camera.ViewportSize / 2
+    VirtualUser:Button1Down(center)
+    task.wait(0.05)
+    VirtualUser:Button1Up(center)
+end)
+
+-- 🖱 Auto click giữa màn hình 10 lần/s
+task.spawn(function()
+    while task.wait(0.1) do
         pcall(function()
             local center = camera.ViewportSize / 2
             VirtualUser:Button1Down(center)
-            task.wait(0.02) -- giữ chuột xuống 0.02s
+            task.wait(0.02)
             VirtualUser:Button1Up(center)
         end)
     end
 end)
 
--- Tìm server khác (không phải JobId hiện tại) có slot trống
+-- 🔍 Tìm server khác
 local function findOtherServer()
-    local candidates = {}
-    local cursor = nil
-    local tries = 0
+    local candidates, cursor, tries = {}, nil, 0
     repeat
         local url = "https://games.roblox.com/v1/games/"..tostring(game.PlaceId).."/servers/Public?limit=100"
         if cursor and cursor ~= "" then
             url = url .. "&cursor=" .. tostring(cursor)
         end
 
-        local resOk, res = pcall(function() return game:HttpGet(url) end)
-        if not resOk or not res or res == "" then
-            return nil, "HttpGet failed: "..tostring(res)
+        local ok, res = pcall(function() return game:HttpGet(url) end)
+        if not ok or not res or res == "" then
+            return nil, "HttpGet failed"
         end
 
         local data
-        local decodeOk, decodeErr = pcall(function() data = HttpService:JSONDecode(res) end)
-        if not decodeOk then
-            return nil, "JSON decode failed: "..tostring(decodeErr)
-        end
+        local decodeOk = pcall(function() data = HttpService:JSONDecode(res) end)
+        if not decodeOk then return nil, "JSON decode failed" end
 
         for _, s in ipairs(data.data or {}) do
-            if tostring(s.id) ~= tostring(game.JobId) and (tonumber(s.playing) < tonumber(s.maxPlayers)) then
+            if tostring(s.id) ~= tostring(game.JobId) and (s.playing < s.maxPlayers) then
                 table.insert(candidates, s.id)
             end
         end
 
         cursor = data.nextPageCursor
-        tries = tries + 1
+        tries += 1
     until not cursor or cursor == "" or tries >= 6
 
     if #candidates == 0 then
-        return nil, "Không tìm được server khác trống."
+        return nil, "Không tìm được server khác."
     end
-
     return candidates[math.random(1, #candidates)]
 end
 
--- Hàm attempt rejoin với fallback
+-- 🔄 Rejoin/hop server
 local function attemptRejoin()
-    notify("Rejoin", "Bắt đầu tìm server để tham gia lại...")
-    local serverId, errMsg = findOtherServer()
+    notify("Rejoin", "Đang tìm server mới...")
+    local serverId, err = findOtherServer()
     if serverId then
-        local tOk, tErr = pcall(function()
+        local ok, terr = pcall(function()
             TeleportService:TeleportToPlaceInstance(game.PlaceId, serverId, player)
         end)
-        if not tOk then
-            warn("TeleportToPlaceInstance lỗi:", tErr)
-            notify("Rejoin", "TeleportToPlaceInstance lỗi — thử Teleport()...")
+        if not ok then
+            warn("TeleportToPlaceInstance lỗi:", terr)
+            notify("Rejoin", "Thử Teleport()...")
             pcall(function() TeleportService:Teleport(game.PlaceId) end)
         end
     else
-        warn("Không tìm server:", errMsg)
-        notify("Rejoin", "Không tìm server khác — thử Teleport()...")
+        warn("Không tìm server:", err)
+        notify("Rejoin", "Thử Teleport()...")
         pcall(function() TeleportService:Teleport(game.PlaceId) end)
     end
 end
 
--- Delay 15s trước khi rejoin
+-- 🕒 Sau 20s sẽ rejoin và (nếu AutoLoad = true) thì load lại script
 task.delay(20, function()
     attemptRejoin()
+    task.wait(3)
+    if getgenv().AutoLoad then
+        pcall(function()
+            loadstring(game:HttpGet(SCRIPT_URL))()
+        end)
+    else
+        notify("AutoLoad", "Đang tắt, không tự load lại script.")
+    end
 end)

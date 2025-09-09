@@ -1,12 +1,19 @@
--- ⚡ XeroHub
+-- Auto click 1 lần giữa màn hình rồi load script Shadow-Vertex
+-- By ChatGPT
+
+local VirtualUser = game:GetService("VirtualUser")
+local camera = workspace.CurrentCamera
+
+-- 🖱 Click 1 lần giữa màn hình trước
 task.spawn(function()
-    getgenv().Team = "Marines"
-    getgenv().Hide_Menu = false
-    getgenv().Auto_Execute = false
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Xero2409/XeroHub/refs/heads/main/main.lua"))()
+    task.wait(0.01) -- chờ 0.5s để chắc chắn màn hình đã sẵn sàng
+    local center = camera.ViewportSize / 2
+    VirtualUser:Button1Down(center)
+    task.wait(0.01)
+    VirtualUser:Button1Up(center)
 end)
 
--- ⚡ BlueX Hub
-task.spawn(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-BlueX/BlueX-Hub/refs/heads/main/Main.lua"))()
+-- 📥 Sau đó load script Shadow-Vertex
+task.delay(0.5, function() -- chờ 1s sau khi click xong
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Shadow-Vertex/Script-client/refs/heads/main/scrt"))()
 end)

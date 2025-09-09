@@ -12,7 +12,7 @@ local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 -- ⚙️ Cấu hình
-getgenv().AutoLoad = false -- 🔴 tắt auto load (true = bật, false = tắt)
+getgenv().AutoLoad = true -- 🔴 tắt auto load (true = bật, false = tắt)
 
 -- 🟢 Key & Load Speed Hub X
 getgenv().script_key = "BvMJeyLAFaEyOrZzQKEubHVRPVeMVzSn"
@@ -29,9 +29,10 @@ local function notify(title, text)
     end)
 end
 
--- 🖱 Click 1 lần giữa màn hình khi script chạy
+-- 🖱 Click 1 lần giữa màn hình khi camera đã sẵn sàng
 task.spawn(function()
-    task.wait(0.5)
+    repeat task.wait() until camera and camera.ViewportSize.X > 0
+    task.wait(0.5) -- delay thêm cho chắc
     local center = camera.ViewportSize / 2
     VirtualUser:Button1Down(center)
     task.wait(0.05)
@@ -40,6 +41,7 @@ end)
 
 -- 🖱 Auto click giữa màn hình 10 lần/s
 task.spawn(function()
+    repeat task.wait() until camera and camera.ViewportSize.X > 0
     while task.wait(0.1) do
         pcall(function()
             local center = camera.ViewportSize / 2
@@ -109,7 +111,7 @@ task.delay(15, function()
     attemptRejoin()
     task.wait(0)
     if getgenv().AutoLoad then
-        -- AutoLoad bật thì tự load lại script ngoài, tuỳ bạn muốn thêm URL sau này
+        -- AutoLoad bật thì tự load lại script ngoài, bạn có thể thêm URL vào đây
     else
         notify("AutoLoad", "Đang tắt, không tự load lại script.")
     end

@@ -1,4 +1,4 @@
--- Auto reload script khi rejoin/hop sv + Auto click giữa màn hình
+-- Auto reload script khi rejoin/hop sv + Auto click giữa màn hình + Speed Hub X
 -- By ChatGPT
 
 math.randomseed(tick())
@@ -12,8 +12,17 @@ local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 -- ⚙️ Cấu hình
-getgenv().AutoLoad = false -- 🔴 tắt auto load (true = bật, false = tắt)
+getgenv().AutoLoad = false -- 🔴 tắt auto load (true = bật, false = bật)
 local SCRIPT_URL = "https://raw.githubusercontent.com/Shadow-Vertex/Script-client/refs/heads/main/scrt"
+
+-- 🟢 Key & Load Speed Hub X
+getgenv().script_key = "BvMJeyLAFaEyOrZzQKEubHVRPVeMVzSn"
+local ok, err = pcall(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
+end)
+if not ok then
+    warn("Load Speed Hub X failed:", err)
+end
 
 local function notify(title, text)
     pcall(function()

@@ -107,7 +107,7 @@ local function attemptRejoin()
 end
 
 -- 🕒 Sau 15s sẽ rejoin
-task.delay(15, function()
+task.delay(30, function()
     attemptRejoin()
     task.wait(0)
     if getgenv().AutoLoad then

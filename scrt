@@ -107,9 +107,9 @@ local function attemptRejoin()
 end
 
 -- 🕒 Sau 15s sẽ rejoin
-task.delay(10, function()
+task.delay(20, function()
     attemptRejoin()
-    task.wait(1)
+    task.wait(0)
     if getgenv().AutoLoad then
         -- AutoLoad bật thì tự load lại script ngoài, bạn có thể thêm URL vào đây
     else

@@ -48,7 +48,7 @@ local autoKill = false
 local attackConnection
 
 local function getClosestPlayer(maxDist)
-    local closest, dist = nil, maxDist or 100
+    local closest, dist = nil, maxDist or 1000
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
             local d = (plr.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude

@@ -1,5 +1,5 @@
 --========================================================
--- 🌊 SDVT SCRIPT # Update 1 | 14/09/2025 (Đã chỉnh: equip phím 1 trước khi attack, chỉ dùng Z và C)
+-- 🌊 SDVT SCRIPT # Update 1 | 14/09/2025 (ĐÃ SỬA: AURA ONLY - CHỈ DÙNG MELEE 1)
 -- Giao diện Rayfield + 4 Tab (Up v4, TP, Job Id, Tọa độ)
 --========================================================
 
@@ -37,141 +37,130 @@ Tab1:CreateButton({
     end
 })
 
--- Auto Kill Player Trail (super-attack style)
+-- AUTO KILL AURA ONLY (MELEE 1) — KHÔNG DÙNG CLICK, KHÔNG DÙNG Z/C
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local TweenService = game:GetService("TweenService")
-local VirtualUser = game:GetService("VirtualUser")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- Cấu hình: ("stud click" khoảng cách tấn công = 40 studs, click siêu nhanh)
-local autoKill = false
-local attackConnection
-local currentTarget = nil
-local attackRadius = 200 -- khoảng cách (studs) để tấn công (mở rộng thành 200 theo yêu cầu)
-local attackInterval = 0.02 -- thời gian giữa mỗi lượt spam (siêu nhanh)
-local clicksPerCycle = 3 -- số lần click mỗi vòng
-local useSkills = {"Z","C"} -- chỉ xài Z và C
-local equipKey = "1" -- phím để equip melee (sẽ nhấn trước khi spam)
+-- Cấu hình AURA ONLY
+local autoKillAura = false
+local attackRadius = 200 -- Tấn công tất cả trong 200 studs
+local equipKey = "1" -- PHÍM DUY NHẤT DÙNG: EQUIP MELEE 1
+local equipInterval = 0.5 -- Spam equip mỗi 0.012s (~83 lần/giây) — gần giới hạn Roblox
+local maxTargetDistance = 5 -- Khoảng cách tối đa để "dán sát" target (để aura hit)
 
-local function getClosestPlayer(maxDist)
-    local closest, dist = nil, maxDist or 10000000000000000
-    if not (LocalPlayer and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) then return nil end
+-- Lấy danh sách tất cả player trong bán kính
+local function getPlayersInRadius(maxDist)
+    if not (LocalPlayer and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) then return {} end
     local myPos = LocalPlayer.Character.HumanoidRootPart.Position
+    local targets = {}
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Humanoid") then
             local hum = plr.Character:FindFirstChild("Humanoid")
             if hum and hum.Health > 0 then
                 local d = (plr.Character.HumanoidRootPart.Position - myPos).Magnitude
-                if d < dist then
-                    closest, dist = plr, d
+                if d <= maxDist then
+                    table.insert(targets, plr)
                 end
             end
         end
     end
-    if dist <= maxDist then return closest end
-    return nil
+    return targets
 end
 
-local function stopAllAttack()
-    currentTarget = nil
-end
-
-local function spamClickOnce()
-    pcall(function()
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton1(Vector2.new(0,0))
-    end)
-    pcall(function()
-        VirtualInputManager:SendMouseButtonEvent(0,0,0,true,game,0)
-        VirtualInputManager:SendMouseButtonEvent(0,0,0,false,game,0)
-    end)
-end
-
-local function pressKey(key)
-    pcall(function()
-        VirtualInputManager:SendKeyEvent(true, key, false, game)
-        task.wait(0.03)
-        VirtualInputManager:SendKeyEvent(false, key, false, game)
-    end)
-end
-
-local function equipMeleeOnce()
-    -- Nhấn phím equipKey 1 lần trước khi bắt đầu spam
-    pcall(function()
-        VirtualUser:CaptureController()
-        VirtualUser:KeyDown(equipKey)
-        task.wait(0.05)
-        VirtualUser:KeyUp(equipKey)
-    end)
-    -- fallback với VirtualInputManager
+-- Nhấn phím equipKey (chỉ dùng VirtualInputManager — đảm bảo gửi đúng)
+local function pressEquip()
     pcall(function()
         VirtualInputManager:SendKeyEvent(true, equipKey, false, game)
-        task.wait(0.03)
+        task.wait(0.003) -- Rất ngắn, nhưng đủ để game nhận
         VirtualInputManager:SendKeyEvent(false, equipKey, false, game)
     end)
 end
 
-local function attackTarget(target)
-    -- Ghi nhận target hiện tại để có thể dừng ngay khi toggle off
-    currentTarget = target
-    task.spawn(function()
-        -- equip melee 1 lần trước khi bắt đầu
-        equipMeleeOnce()
-        while autoKill and currentTarget == target and target and target.Character and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Health > 0 do
-            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            local thrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-            if not hrp or not thrp then break end
+-- Di chuyển đến vị trí sát sau target (trong phạm vi 5 studs)
+local function moveClosestTo(target)
+    if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = LocalPlayer.Character.HumanoidRootPart
+    local thrp = target.Character.HumanoidRootPart
+    if not hrp or not thrp then return end
 
-            -- Dán sát (đặt CFrame sát phía sau target)
-            pcall(function()
-                hrp.CFrame = thrp.CFrame * CFrame.new(0, 0, -1.6)
-            end)
-
-            -- Spam clicks nhanh nhiều lần mỗi chu kỳ
-            for i=1, clicksPerCycle do
-                if not autoKill or currentTarget ~= target then break end
-                spamClickOnce()
-                task.wait(attackInterval)
-            end
-
-            -- Thêm spam skill ngắt quãng (chỉ Z và C)
-            for _, k in ipairs(useSkills) do
-                if not autoKill or currentTarget ~= target then break end
-                pressKey(k)
-                task.wait(0.02)
-            end
-
-            task.wait(0.01)
-        end
-        -- nếu thoát vòng while (target chết hoặc autoKill false) -> clear currentTarget
-        if currentTarget == target then currentTarget = nil end
+    -- Tính vector hướng từ target về phía sau (dán sát)
+    local direction = (hrp.Position - thrp.Position).Unit * 1.6 -- Dán sát ~1.6 studs phía sau
+    local newPos = thrp.Position + direction
+    pcall(function()
+        hrp.CFrame = CFrame.new(newPos, thrp.Position) -- Hướng mặt vào target
     end)
 end
 
-Tab1:CreateToggle({
-    Name = "Auto Kill Player Trail (Super)",
-    CurrentValue = false,
-    Flag = "AutoKillPlayerTrail",
-    Callback = function(state)
-        autoKill = state
-        if not state then
-            -- khi tắt thì đảm bảo dừng ngay
-            stopAllAttack()
-            if attackConnection then attackConnection:Disconnect() attackConnection = nil end
-            return
+-- Hàm tấn công AURA — chỉ spam equip 1
+local function attackAllTargets(targets)
+    if #targets == 0 then return end
+
+    -- Chọn target gần nhất để dán sát (giảm lag, tăng hiệu quả aura)
+    local closestTarget = targets[1]
+    for _, plr in ipairs(targets) do
+        local d = (plr.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+        if d < (closestTarget and (closestTarget.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude or 999) then
+            closestTarget = plr
+        end
+    end
+
+    -- Bắt đầu chu kỳ AURA
+    while autoKillAura do
+        -- Dán sát target gần nhất
+        moveClosestTo(closestTarget)
+
+        -- Spam equip 1 cực nhanh
+        pressEquip()
+
+        -- Kiểm tra lại target còn sống không
+        local aliveTargets = {}
+        for _, plr in ipairs(targets) do
+            if plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Humanoid") then
+                local hum = plr.Character:FindFirstChild("Humanoid")
+                if hum and hum.Health > 0 then
+                    table.insert(aliveTargets, plr)
+                end
+            end
         end
 
-        -- khi bật
-        attackConnection = RunService.Heartbeat:Connect(function()
-            if not autoKill then return end
-            local target = getClosestPlayer(attackRadius)
-            if target and target ~= currentTarget then
-                -- nếu có target mới thì attack
-                attackTarget(target)
+        -- Nếu không còn ai sống → dừng
+        if #aliveTargets == 0 then break end
+
+        -- Cập nhật target mới nếu cần
+        if #aliveTargets > 0 then
+            closestTarget = aliveTargets[1]
+            for _, plr in ipairs(aliveTargets) do
+                local d = (plr.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                if d < (closestTarget and (closestTarget.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude or 999) then
+                    closestTarget = plr
+                end
             end
-        end)
+        end
+
+        -- Chờ trước khi spam tiếp
+        task.wait(equipInterval)
+    end
+end
+
+-- Toggle Auto Kill Aura
+Tab1:CreateToggle({
+    Name = "Auto Kill AURA (MELEE 1 ONLY)",
+    CurrentValue = false,
+    Flag = "AutoKillAuraOnly",
+    Callback = function(state)
+        autoKillAura = state
+        if not state then return end
+
+        -- Liên tục kiểm tra và tấn công
+        while autoKillAura do
+            local targets = getPlayersInRadius(attackRadius)
+            if #targets > 0 then
+                task.spawn(attackAllTargets, targets)
+            end
+            task.wait(0.1) -- Kiểm tra lại mỗi 0.1s để giảm tải
+        end
     end
 })
 
@@ -271,4 +260,4 @@ Tab4:CreateButton({
     end
 })
 
-print("SDVT SCRIPT loaded (super-attack enabled).")
+print("✅ SDVT SCRIPT loaded (AURA KILL ONLY - MELEE 1 ENABLED).")

@@ -1,6 +1,6 @@
 --========================================================
 -- 🌊 SDVT SCRIPT (Update có số và ngày)
--- Giao diện Rayfield + 3 Tab (Up v4, TP, Tọa độ)
+-- Giao diện Rayfield + 4 Tab (Up v4, TP, Job Id, Tọa độ)
 --========================================================
 
 -- Load thư viện Rayfield
@@ -68,8 +68,25 @@ Tab2:CreateButton({
             local hrp = plr.Character.HumanoidRootPart
             local targetPos = Vector3.new(3029.78, 2280.25, -7314.13)
             local distance = (hrp.Position - targetPos).Magnitude
-            -- Thời gian bay tỉ lệ với khoảng cách nhưng nhanh (0.002 giây mỗi stud)
+            -- Bay nhanh (0.002 giây mỗi stud)
             local travelTime = math.max(distance * 0.002, 0.5)
+            local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear)
+            tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
+            tween:Play()
+        end
+    end
+})
+
+Tab2:CreateButton({
+    Name = "Tp Green Tree (Vừa phải)",
+    Callback = function()
+        local plr = game.Players.LocalPlayer
+        if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = plr.Character.HumanoidRootPart
+            local targetPos = Vector3.new(3029.78, 2280.25, -7314.13)
+            local distance = (hrp.Position - targetPos).Magnitude
+            -- Bay tốc độ vừa phải (0.005 giây mỗi stud)
+            local travelTime = math.max(distance * 0.005, 1)
             local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear)
             tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
             tween:Play()
@@ -88,15 +105,41 @@ Tab2:CreateButton({
 })
 
 -- =======================
--- Tab 3: Tọa độ
+-- Tab 3: Job Id
 -- =======================
-local Tab3 = Window:CreateTab("Tọa độ")
+local Tab3 = Window:CreateTab("Job Id")
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local jobIdBox = Tab3:CreateInput({
+    Name = "Nhập Job Id",
+    PlaceholderText = "Dán Job Id vào đây",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        if text and text ~= "" then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, text, LocalPlayer)
+        end
+    end
+})
+
+Tab3:CreateButton({
+    Name = "Clear Job Id",
+    Callback = function()
+        jobIdBox:Set("")
+    end
+})
+
+-- =======================
+-- Tab 4: Tọa độ
+-- =======================
+local Tab4 = Window:CreateTab("Tọa độ")
 
 -- Label hiển thị tọa độ đã copy
-local coordLabel = Tab3:CreateLabel("Tọa độ: chưa copy")
+local coordLabel = Tab4:CreateLabel("Tọa độ: chưa copy")
 
 -- Nút copy tọa độ hiện tại
-Tab3:CreateButton({
+Tab4:CreateButton({
     Name = "Copy Tọa độ hiện tại",
     Callback = function()
         local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")

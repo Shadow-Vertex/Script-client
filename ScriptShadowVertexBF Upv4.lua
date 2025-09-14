@@ -49,14 +49,14 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local autoKill = false
 local attackConnection
 local currentTarget = nil
-local attackRadius = 40 -- khoảng cách (studs) để tấn công
+local attackRadius = 200 -- khoảng cách (studs) để tấn công (mở rộng thành 200 theo yêu cầu)
 local attackInterval = 0.02 -- thời gian giữa mỗi lượt spam (siêu nhanh)
 local clicksPerCycle = 3 -- số lần click mỗi vòng
 local useSkills = {"Z","C"} -- chỉ xài Z và C
 local equipKey = "1" -- phím để equip melee (sẽ nhấn trước khi spam)
 
 local function getClosestPlayer(maxDist)
-    local closest, dist = nil, maxDist or 1000
+    local closest, dist = nil, maxDist or 10000000000000000
     if not (LocalPlayer and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) then return nil end
     local myPos = LocalPlayer.Character.HumanoidRootPart.Position
     for _, plr in ipairs(Players:GetPlayers()) do

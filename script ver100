@@ -1,0 +1,5 @@
+local Settings = {
+  JoinTeam = "Pirates"; -- Pirates/Marines
+  Translator = true; -- true/false
+}
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Shadow-Vertex/Script-client/refs/heads/main/autobounty.hub"))()

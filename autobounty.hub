@@ -1,384 +1,118 @@
--- Auto Bounty (mẫu) + Rayfield UI
--- Tác giả: ChatGPT (phiên bản tùy chỉnh cho bạn)
--- Hướng dẫn nhanh:
--- 1) Dán vào executor/local script.
--- 2) Nếu game dùng RemoteEvent/RemoteFunction có tên khác, chỉnh các biến dưới "GAME-SPECIFIC" tương ứng.
--- 3) Mở menu (Rayfield) -> Settings để bật/tắt tính năng.
+-- Auto Bounty & Skill Menu UI
+-- By ChatGPT
 
--- ====== LOAD RAYFIELD ======
+-- Load Rayfield
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ====== SERVICES ======
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- ====== GAME-SPECIFIC: CHỈNH Ở ĐÂY NẾU CẦN ======
--- Những tên remote / function / tool dưới đây là giả định chung.
--- Nếu game bạn chơi dùng tên khác (ví dụ: "BountyRemote", "DrinkFruit", "EquipSwordRemote"...),
--- hãy thay các chuỗi tương ứng bên dưới.
-local GAME_REMOTES = {
-    -- ví dụ: tên remote để vote (nhiều game khác nhau có tên khác nhau)
-    VoteRemoteName = "Vote",          -- ví dụ RemoteEvent để vote (nếu không có, script sẽ in log)
-    -- ví dụ: remote generic để đánh / dùng skill (thông thường Blox Fruits dùng 'RemoteEvent' với các hành động)
-    SkillRemoteName = "Remotes",     -- tên folder remotes/remote chính (chỉnh theo game)
-    -- tên tool melee nếu bạn muốn auto-equip (thay theo inventory)
-    PreferredMeleeName = "Melee",    -- hoặc "Katana", "Fists"...
-}
-
--- ====== SETTINGS (mặc định) ======
+-- ====== SETTINGS ======
 local settings = {
-    AutoBounty = false,
-    BountyMin = 1000,       -- chỉ chọn target bounty >= giá trị này (nếu game có bounty)
-    AutoAttack = false,
-    UseMelee = true,
-    MeleeOnLeft = true,     -- "melee o ben canh" (bật trước)
-    AbilityKeys = { Z = true, X = true, C = true }, -- keys enabled to use
-    VoteMapping = {
-        Fruit = { "Z", "X", "C", "V" },  -- nếu user muốn vote bằng Z/X/C/V
-        Sword = { "Z", "X" },            -- sword vote mapping
-        Gun   = { "Z", "X" }             -- gun vote mapping (the user wrote zx)
-    },
-    AutoBountyRange = 100,   -- range to consider target (studs)
-    LoopDelay = 0.6,
+    AbilityKeys = {
+        Melee = { Z = false, X = false, C = false },
+        Fruit = { Z = false, X = false, C = false, V = false, F = false },
+        Sword = { Z = false, X = false },
+        Gun   = { Z = false, X = false },
+    }
 }
 
--- ====== UTIL ======
-local function debugPrint(...)
-    print("[AutoBountyScript]", ...)
-end
-
-local function getRootCharacter(player)
-    if not player then return end
-    local c = player.Character
-    if c and c:FindFirstChild("HumanoidRootPart") then
-        return c
-    end
-    return nil
-end
-
-local function getDistanceToLocal(partOrPos)
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return math.huge end
-    local pos = (typeof(partOrPos) == "Vector3") and partOrPos or (partOrPos and partOrPos.Position)
-    if not pos then return math.huge end
-    return (hrp.Position - pos).Magnitude
-end
-
--- ====== GAME-ABSTRACTION: HÀM GỌI ĐỂ "TẤN CÔNG" / "DÙNG CHIÊU" ======
--- Những hàm này cố gắng dùng cách chung nhất: nếu tìm thấy tool thì Tool:Activate()
--- nếu tìm thấy RemoteEvent trong ReplicatedStorage, sẽ cố gọi FireServer với tên action.
--- Bạn có thể sửa phần trong pcall để phù hợp server cụ thể.
-
+-- ====== FUNCTION DÙNG CHIÊU ======
 local function tryUseAbility(key)
-    -- key: "Z" / "X" / "C" / "V"
-    -- 1) thử active tool hiện đang cầm (Tool:Activate)
+    -- Thử activate tool hiện đang cầm
     local char = LocalPlayer.Character
     if char then
-        local humanoid = char:FindFirstChildWhichIsA("Humanoid")
-        if humanoid then
-            local tool = char:FindFirstChildOfClass("Tool")
-            if tool then
-                local ok, err = pcall(function() tool:Activate() end)
-                if ok then
-                    debugPrint("Activated tool for key", key, "tool:", tool.Name)
-                    return true
-                else
-                    debugPrint("Tool:Activate failed:", err)
-                end
-            end
+        local tool = char:FindFirstChildOfClass("Tool")
+        if tool then
+            pcall(function() tool:Activate() end)
+            print("Dùng tool với phím", key)
         end
     end
 
-    -- 2) thử gọi RemoteEvent chung (nếu có)
-    local remotesFolder = ReplicatedStorage:FindFirstChild(GAME_REMOTES.SkillRemoteName)
-    if remotesFolder then
-        -- Attempt common patterns: FireServer("UseSkill", key) hoặc FireServer(key)
-        for _, r in pairs(remotesFolder:GetDescendants()) do
+    -- Nếu game có remote skill thì sửa chỗ này cho đúng tên remote
+    local remoteFolder = ReplicatedStorage:FindFirstChild("Remotes")
+    if remoteFolder then
+        for _, r in pairs(remoteFolder:GetDescendants()) do
             if r:IsA("RemoteEvent") then
                 pcall(function()
-                    -- 3 kiểu gọi thử
                     r:FireServer("UseSkill", key)
-                    r:FireServer("Ability", key)
                     r:FireServer(key)
                 end)
             end
         end
-        debugPrint("Fired potential remotes for key", key)
-        return true
-    end
-
-    debugPrint("Không tìm được cách dùng chiêu cho key", key)
-    return false
-end
-
-local function tryVote(kind, key)
-    -- kind: "Fruit"/"Sword"/"Gun"
-    -- key: "Z"/"X"/"C"/"V"
-    local voteRemote = ReplicatedStorage:FindFirstChild(GAME_REMOTES.VoteRemoteName)
-    if voteRemote and voteRemote:IsA("RemoteEvent") then
-        pcall(function()
-            -- Nhiều server vote khác nhau: mình bắn thử vài dạng
-            voteRemote:FireServer(kind, key)
-            voteRemote:FireServer(key)
-            voteRemote:FireServer(kind .. "_" .. key)
-        end)
-        debugPrint("Vote fired:", kind, key)
-        return true
-    else
-        debugPrint("Không tìm thấy VoteRemote:", GAME_REMOTES.VoteRemoteName)
-        return false
+        print("Fired remote cho key:", key)
     end
 end
 
--- Auto-attack target (mẫu)
-local function attackPlayerTarget(targetPlayer)
-    if not targetPlayer or not targetPlayer.Character then return end
-    local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not targetRoot then return end
-
-    -- Nếu muốn TP hoặc tiếp cận target: CẢNH BÁO - tùy theo executor, teleporting có thể gây phát hiện
-    -- Mình chỉ làm mẫu: đi sát (setCFrame) nếu phép được cho local movement, bằng cách di chuyển HumanoidRootPart
-    pcall(function()
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp and (getDistanceToLocal(targetRoot) > 3) then
-            hrp.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3) -- đứng cách 3 studs
-        end
-    end)
-
-    -- kích hoạt melee/tool nhiều lần trong 1 khoảng thời gian ngắn
-    for i = 1, 6 do
-        local ok = pcall(function()
-            -- nếu cầm tool thì activate
-            local char = LocalPlayer.Character
-            if char then
-                local tool = char:FindFirstChildOfClass("Tool")
-                if tool then
-                    tool:Activate()
-                end
-            end
-            -- thử dùng ability Z/X/C nếu bật
-            if settings.AbilityKeys.Z then tryUseAbility("Z") end
-            if settings.AbilityKeys.X then tryUseAbility("X") end
-            if settings.AbilityKeys.C then tryUseAbility("C") end
-        end)
-        if not ok then break end
-        task.wait(0.15)
-    end
-end
-
--- ====== AUTO BOUNTY: VÒNG LẶP CHÍNH ======
-local autobountyLoopRunning = false
-spawn(function()
-    while true do
-        if settings.AutoBounty then
-            -- quét player khác
-            for _, pl in pairs(Players:GetPlayers()) do
-                if pl ~= LocalPlayer and pl.Character and pl.Character:FindFirstChild("HumanoidRootPart") then
-                    -- Lọc theo điều kiện: khoảng cách + leaderstats.Bounty (nếu có)
-                    local dist = getDistanceToLocal(pl.Character.HumanoidRootPart)
-                    if dist <= settings.AutoBountyRange then
-                        local pass = true
-                        -- kiểm tra leaderstats.Bounty nếu có
-                        local ls = pl:FindFirstChild("leaderstats")
-                        if ls and ls:FindFirstChild("Bounty") then
-                            local b = ls.Bounty.Value
-                            if b < settings.BountyMin then
-                                pass = false
-                            end
-                        end
-                        if pass then
-                            debugPrint("AutoBounty: target found", pl.Name, "dist", math.floor(dist))
-                            if settings.AutoAttack then
-                                attackPlayerTarget(pl)
-                            end
-                        end
-                    end
-                end
-            end
-        end
-        task.wait(settings.LoopDelay)
-    end
-end)
-
--- ====== RAYFIELD UI ======
+-- ====== WINDOW ======
 local Window = Rayfield:CreateWindow({
-    Name = "Auto Bounty & Vote (mẫu)",
-    LoadingTitle = "Khởi tạo script",
-    LoadingSubtitle = "ChatGPT custom",
+    Name = "Auto Bounty Skills Menu",
+    LoadingTitle = "Run script",
+    LoadingSubtitle = "Script SDVT Team",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "AutoBountyCFG",
+        FolderName = "AutoBountyMenu",
         FileName = "cfg"
     }
 })
 
--- Tab Setting
-local TabSetting = Window:CreateTab("Setting", 11602940797) -- icon id optional
+-- ====== TAB ======
+local Tab = Window:CreateTab("Setting", 11602940797)
 
--- Left/Right Columns: use sections
-local SectionLeft = TabSetting:CreateSection("Left")
-local SectionRight = TabSetting:CreateSection("Right")
+-- ========== MELEE ==========
+local meleeSec = Tab:CreateSection("Melee")
 
--- Left column controls
-local AutoBountyToggle = TabSetting:CreateToggle({
-    Name = "Auto Bounty",
-    CurrentValue = settings.AutoBounty,
-    Flag = "autobounty_toggle",
-    Callback = function(val)
-        settings.AutoBounty = val
-        debugPrint("AutoBounty", val)
-    end
-})
-
-local AutoAttackToggle = TabSetting:CreateToggle({
-    Name = "Auto Attack on Found",
-    CurrentValue = settings.AutoAttack,
-    Flag = "autoattack_toggle",
-    Callback = function(val)
-        settings.AutoAttack = val
-        debugPrint("AutoAttack", val)
-    end
-})
-
-local UseMeleeToggle = TabSetting:CreateToggle({
-    Name = "Use Melee",
-    CurrentValue = settings.UseMelee,
-    Flag = "usemelee_toggle",
-    Callback = function(val)
-        settings.UseMelee = val
-        debugPrint("UseMelee", val)
-    end
-})
-
-local BountyMinSlider = TabSetting:CreateSlider({
-    Name = "Min Bounty (if available)",
-    Range = {0, 100000},
-    Increment = 50,
-    Suffix = "B",
-    CurrentValue = settings.BountyMin,
-    Flag = "bountymin_slider",
-    Callback = function(val)
-        settings.BountyMin = val
-    end
-})
-
-local RangeSlider = TabSetting:CreateSlider({
-    Name = "Search Range (studs)",
-    Range = {10, 1000},
-    Increment = 10,
-    Suffix = "studs",
-    CurrentValue = settings.AutoBountyRange,
-    Flag = "range_slider",
-    Callback = function(val)
-        settings.AutoBountyRange = val
-    end
-})
-
--- Right column: ability keys & vote mapping
-TabSetting:CreateLabel("Ability keys (Z/X/C) - tick to auto use:")
-local abilityZ = TabSetting:CreateToggle({
-    Name = "Use Z",
-    CurrentValue = settings.AbilityKeys.Z,
-    Callback = function(v) settings.AbilityKeys.Z = v end
-})
-local abilityX = TabSetting:CreateToggle({
-    Name = "Use X",
-    CurrentValue = settings.AbilityKeys.X,
-    Callback = function(v) settings.AbilityKeys.X = v end
-})
-local abilityC = TabSetting:CreateToggle({
-    Name = "Use C",
-    CurrentValue = settings.AbilityKeys.C,
-    Callback = function(v) settings.AbilityKeys.C = v end
-})
-
-TabSetting:CreateLabel("Vote mapping (press buttons below to test):")
-TabSetting:CreateButton({
-    Name = "Vote Fruit (Z/X/C/V sequence)",
-    Callback = function()
-        for _, k in ipairs(settings.VoteMapping.Fruit) do
-            tryVote("Fruit", k)
-            task.wait(0.12)
+for _, k in ipairs({ "Z", "X", "C" }) do
+    Tab:CreateToggle({
+        Name = "Use " .. k,
+        CurrentValue = settings.AbilityKeys.Melee[k],
+        Callback = function(v)
+            settings.AbilityKeys.Melee[k] = v
+            if v then tryUseAbility(k) end
         end
-    end
-})
+    })
+end
 
-TabSetting:CreateButton({
-    Name = "Vote Sword (Z/X)",
-    Callback = function()
-        for _, k in ipairs(settings.VoteMapping.Sword) do
-            tryVote("Sword", k)
-            task.wait(0.12)
+-- ========== FRUIT ==========
+local fruitSec = Tab:CreateSection("Fruit")
+
+for _, k in ipairs({ "Z", "X", "C", "V", "F" }) do
+    Tab:CreateToggle({
+        Name = "Use " .. k,
+        CurrentValue = settings.AbilityKeys.Fruit[k],
+        Callback = function(v)
+            settings.AbilityKeys.Fruit[k] = v
+            if v then tryUseAbility(k) end
         end
-    end
-})
+    })
+end
 
-TabSetting:CreateButton({
-    Name = "Vote Gun (Z/X)",
-    Callback = function()
-        for _, k in ipairs(settings.VoteMapping.Gun) do
-            tryVote("Gun", k)
-            task.wait(0.12)
+-- ========== SWORD ==========
+local swordSec = Tab:CreateSection("Sword")
+
+for _, k in ipairs({ "Z", "X" }) do
+    Tab:CreateToggle({
+        Name = "Use " .. k,
+        CurrentValue = settings.AbilityKeys.Sword[k],
+        Callback = function(v)
+            settings.AbilityKeys.Sword[k] = v
+            if v then tryUseAbility(k) end
         end
-    end
-})
+    })
+end
 
-TabSetting:CreateLabel("Keys quick-test (press Z/X/C/V on keyboard)")
+-- ========== GUN ==========
+local gunSec = Tab:CreateSection("Gun")
 
--- ====== KEYBINDS: LẮNG NGHE PHÍM NGƯỜI DÙNG ======
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.UserInputType == Enum.UserInputType.Keyboard then
-        local key = input.KeyCode.Name -- "Z", "X", "C", "V" etc
-        if key == "Z" or key == "X" or key == "C" or key == "V" then
-            if settings.AbilityKeys[key] then
-                spawn(function() tryUseAbility(key) end)
-            end
+for _, k in ipairs({ "Z", "X" }) do
+    Tab:CreateToggle({
+        Name = "Use " .. k,
+        CurrentValue = settings.AbilityKeys.Gun[k],
+        Callback = function(v)
+            settings.AbilityKeys.Gun[k] = v
+            if v then tryUseAbility(k) end
         end
-    end
-end)
-
--- ====== COMMANDS / UI - Quick debug buttons ======
-local TabMisc = Window:CreateTab("Misc")
-TabMisc:CreateButton({
-    Name = "Print Nearby Players",
-    Callback = function()
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                local d = getDistanceToLocal(p.Character.HumanoidRootPart)
-                debugPrint(p.Name, "dist", math.floor(d))
-            end
-        end
-    end
-})
-
-TabMisc:CreateButton({
-    Name = "Try Equip Preferred Melee",
-    Callback = function()
-        local backpack = LocalPlayer:FindFirstChild("Backpack")
-        if backpack then
-            local t = backpack:FindFirstChild(GAME_REMOTES.PreferredMeleeName)
-            if t and t:IsA("Tool") then
-                pcall(function() LocalPlayer.Character.Humanoid:EquipTool(t) end)
-                debugPrint("Equipped", t.Name)
-            else
-                debugPrint("Không tìm thấy tool", GAME_REMOTES.PreferredMeleeName)
-            end
-        end
-    end
-})
-
-TabMisc:CreateButton({
-    Name = "Toggle AutoBounty",
-    Callback = function()
-        settings.AutoBounty = not settings.AutoBounty
-        debugPrint("AutoBounty toggled to", settings.AutoBounty)
-    end
-})
-
--- ====== END: INSTRUCTIONS (HIỂN THỊ LOG) ======
-debugPrint("Script loaded. Kiểm tra phần GAME-SPECIFIC nếu cần thay tên remote/tool.")
-debugPrint("Nếu muốn mình chỉnh script cho server cụ thể, gửi tên remote hoặc paste 1 phần ReplicatedStorage của game.")
+    })
+end

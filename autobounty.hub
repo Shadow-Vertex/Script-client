@@ -11,12 +11,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- ====== SETTINGS ======
 local settings = {
-    AbilityKeys = {
-        Melee = { Z = false, X = false, C = false },
-        Fruit = { Z = false, X = false, C = false, V = false, F = false },
-        Sword = { Z = false, X = false },
-        Gun   = { Z = false, X = false },
-    }
+    UseMelee = false,
+    UseFruit = false,
+    UseSword = false,
+    UseGun   = false,
 }
 
 -- ====== FUNCTION DÙNG CHIÊU ======
@@ -62,57 +60,57 @@ local Window = Rayfield:CreateWindow({
 local Tab = Window:CreateTab("Setting", 11602940797)
 
 -- ========== MELEE ==========
-local meleeSec = Tab:CreateSection("Melee")
-
-for _, k in ipairs({ "Z", "X", "C" }) do
-    Tab:CreateToggle({
-        Name = "Use " .. k,
-        CurrentValue = settings.AbilityKeys.Melee[k],
-        Callback = function(v)
-            settings.AbilityKeys.Melee[k] = v
-            if v then tryUseAbility(k) end
+Tab:CreateToggle({
+    Name = "Melee (Z, X, C)",
+    CurrentValue = settings.UseMelee,
+    Callback = function(v)
+        settings.UseMelee = v
+        if v then
+            tryUseAbility("Z")
+            tryUseAbility("X")
+            tryUseAbility("C")
         end
-    })
-end
+    end
+})
 
 -- ========== FRUIT ==========
-local fruitSec = Tab:CreateSection("Fruit")
-
-for _, k in ipairs({ "Z", "X", "C", "V", "F" }) do
-    Tab:CreateToggle({
-        Name = "Use " .. k,
-        CurrentValue = settings.AbilityKeys.Fruit[k],
-        Callback = function(v)
-            settings.AbilityKeys.Fruit[k] = v
-            if v then tryUseAbility(k) end
+Tab:CreateToggle({
+    Name = "Fruit (Z, X, C, V, F)",
+    CurrentValue = settings.UseFruit,
+    Callback = function(v)
+        settings.UseFruit = v
+        if v then
+            tryUseAbility("Z")
+            tryUseAbility("X")
+            tryUseAbility("C")
+            tryUseAbility("V")
+            tryUseAbility("F")
         end
-    })
-end
+    end
+})
 
 -- ========== SWORD ==========
-local swordSec = Tab:CreateSection("Sword")
-
-for _, k in ipairs({ "Z", "X" }) do
-    Tab:CreateToggle({
-        Name = "Use " .. k,
-        CurrentValue = settings.AbilityKeys.Sword[k],
-        Callback = function(v)
-            settings.AbilityKeys.Sword[k] = v
-            if v then tryUseAbility(k) end
+Tab:CreateToggle({
+    Name = "Sword (Z, X)",
+    CurrentValue = settings.UseSword,
+    Callback = function(v)
+        settings.UseSword = v
+        if v then
+            tryUseAbility("Z")
+            tryUseAbility("X")
         end
-    })
-end
+    end
+})
 
 -- ========== GUN ==========
-local gunSec = Tab:CreateSection("Gun")
-
-for _, k in ipairs({ "Z", "X" }) do
-    Tab:CreateToggle({
-        Name = "Use " .. k,
-        CurrentValue = settings.AbilityKeys.Gun[k],
-        Callback = function(v)
-            settings.AbilityKeys.Gun[k] = v
-            if v then tryUseAbility(k) end
+Tab:CreateToggle({
+    Name = "Gun (Z, X)",
+    CurrentValue = settings.UseGun,
+    Callback = function(v)
+        settings.UseGun = v
+        if v then
+            tryUseAbility("Z")
+            tryUseAbility("X")
         end
-    })
-end
+    end
+})

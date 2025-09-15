@@ -17,16 +17,16 @@ Frame.Position = UDim2.new(0.5, -200, 0.5, -75)
 Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Frame.BorderSizePixel = 0
 Frame.Parent = LoadGui
-Frame.AnchorPoint = Vector2.new(0.5,0.5)
+Frame.AnchorPoint = Vector2.new(0.5, 0.5)
 Frame.BackgroundTransparency = 0.2
 Frame.ClipsDescendants = true
 local UICorner = Instance.new("UICorner", Frame)
-UICorner.CornerRadius = UDim.new(0,15)
+UICorner.CornerRadius = UDim.new(0, 15)
 
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "🌊 Auto Bounty Hub"
+Title.Text = "🌊 Auto Bounty Hub :)) "
 Title.TextColor3 = Color3.fromRGB(0, 255, 200)
 Title.TextScaled = true
 Title.Font = Enum.Font.GothamBold
@@ -35,7 +35,7 @@ Title.Parent = Frame
 local BarBG = Instance.new("Frame")
 BarBG.Size = UDim2.new(0.9, 0, 0, 15)
 BarBG.Position = UDim2.new(0.05, 0, 0.6, 0)
-BarBG.BackgroundColor3 = Color3.fromRGB(50,50,50)
+BarBG.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 BarBG.BorderSizePixel = 0
 BarBG.Parent = Frame
 local UICorner2 = Instance.new("UICorner", BarBG)
@@ -48,19 +48,19 @@ Bar.Parent = BarBG
 local UICorner3 = Instance.new("UICorner", Bar)
 
 local Status = Instance.new("TextLabel")
-Status.Size = UDim2.new(1,0,0,40)
-Status.Position = UDim2.new(0,0,0.75,0)
+Status.Size = UDim2.new(1, 0, 0, 40)
+Status.Position = UDim2.new(0, 0, 0.75, 0)
 Status.BackgroundTransparency = 1
 Status.Text = "Loading..."
-Status.TextColor3 = Color3.fromRGB(200,200,200)
+Status.TextColor3 = Color3.fromRGB(200, 200, 200)
 Status.TextScaled = true
 Status.Font = Enum.Font.Gotham
 Status.Parent = Frame
 
 task.spawn(function()
-    for i = 1,100 do
+    for i = 1, 100 do
         TweenService:Create(Bar, TweenInfo.new(0.03, Enum.EasingStyle.Linear), {
-            Size = UDim2.new(i/100, 0, 1, 0)
+            Size = UDim2.new(i / 100, 0, 1, 0)
         }):Play()
         Status.Text = "Loading... " .. i .. "%"
         task.wait(0.03)
@@ -76,7 +76,7 @@ task.spawn(function()
 end)
 
 -- =======================
--- Load Rayfield + Auto Load Config
+-- Load Rayfield sau khi UI chạy
 -- =======================
 task.delay(3, function()
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -88,10 +88,10 @@ task.delay(3, function()
 
     -- SETTINGS
     local settings = {
-        Melee = {Enabled=false, Keys={Z=false,X=false,C=false}},
-        Fruit = {Enabled=false, Keys={Z=false,X=false,C=false,V=false,F=false}},
-        Sword = {Enabled=false, Keys={Z=false,X=false}},
-        Gun   = {Enabled=false, Keys={Z=false,X=false}},
+        Melee = {Enabled = false, Keys = {Z = false, X = false, C = false}},
+        Fruit = {Enabled = false, Keys = {Z = false, X = false, C = false, V = false, F = false}},
+        Sword = {Enabled = false, Keys = {Z = false, X = false}},
+        Gun   = {Enabled = false, Keys = {Z = false, X = false}},
         AutoBounty = false
     }
 
@@ -138,38 +138,33 @@ task.delay(3, function()
         }
     })
 
-    -- 👇 TỰ ĐỘNG LOAD CẤU HÌNH ĐÃ LƯU
+    -- 👉 TỰ ĐỘNG LOAD CONFIG NGAY SAU KHI TẠO WINDOW
     Window:LoadConfiguration()
 
     -- ====== Tab 1 Setting ======
     local Tab1 = Window:CreateTab("Settings", 11602940797)
 
     local function createSkillSection(tab, title, tbl, keys)
-        local toggle = tab:CreateToggle({
+        tab:CreateToggle({
             Name = title,
             CurrentValue = tbl.Enabled,
             Flag = "Toggle_" .. title:gsub(" ", ""), -- 👈 Thêm Flag để lưu riêng
-            Callback = function(v)
-                tbl.Enabled = v
-            end
+            Callback = function(v) tbl.Enabled = v end
         })
-
-        for _,k in ipairs(keys) do
+        for _, k in ipairs(keys) do
             tab:CreateToggle({
                 Name = "Use " .. k,
                 CurrentValue = tbl.Keys[k],
                 Flag = "Key_" .. title:gsub(" ", "") .. "_" .. k, -- 👈 Thêm Flag để lưu riêng
-                Callback = function(v)
-                    tbl.Keys[k] = v
-                end
+                Callback = function(v) tbl.Keys[k] = v end
             })
         end
     end
 
-    createSkillSection(Tab1, "Melee", settings.Melee, {"Z","X","C"})
-    createSkillSection(Tab1, "Fruit", settings.Fruit, {"Z","X","C","V","F"})
-    createSkillSection(Tab1, "Sword", settings.Sword, {"Z","X"})
-    createSkillSection(Tab1, "Gun", settings.Gun, {"Z","X"})
+    createSkillSection(Tab1, "Melee", settings.Melee, {"Z", "X", "C"})
+    createSkillSection(Tab1, "Fruit", settings.Fruit, {"Z", "X", "C", "V", "F"})
+    createSkillSection(Tab1, "Sword", settings.Sword, {"Z", "X"})
+    createSkillSection(Tab1, "Gun", settings.Gun, {"Z", "X"})
 
     -- ====== Tab 2 Auto Bounty ======
     local Tab2 = Window:CreateTab("Auto Bounty", 4483362458)
@@ -189,17 +184,14 @@ task.delay(3, function()
             local myChar = LocalPlayer.Character
             if not myChar or not myChar:FindFirstChild("Humanoid") then continue end
             local hum = myChar:FindFirstChild("Humanoid")
-            if hum.Health/hum.MaxHealth < 0.3 then
-                -- nếu máu <30% bay xa chờ hồi
-                myChar:PivotTo(CFrame.new(0,300,0))
-                repeat task.wait(1) until hum.Health/hum.MaxHealth >= 0.7
-                -- hop sv
+            if hum.Health / hum.MaxHealth < 0.3 then
+                myChar:PivotTo(CFrame.new(0, 300, 0))
+                repeat task.wait(1) until hum.Health / hum.MaxHealth >= 0.7
                 game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
             end
 
-            -- tìm đối thủ
             local target
-            for _,plr in pairs(Players:GetPlayers()) do
+            for _, plr in pairs(Players:GetPlayers()) do
                 if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") then
                     target = plr.Character
                     break
@@ -207,17 +199,15 @@ task.delay(3, function()
             end
             if not target then continue end
 
-            -- bay đến target bằng safeFly
             local root = myChar:FindFirstChild("HumanoidRootPart")
             local targetRoot = target:FindFirstChild("HumanoidRootPart")
             if root and targetRoot then
                 safeFlyTo(myChar, targetRoot.Position)
             end
 
-            -- đánh theo setting
-            for mode,data in pairs({Melee=settings.Melee,Fruit=settings.Fruit,Sword=settings.Sword,Gun=settings.Gun}) do
+            for mode, data in pairs({Melee = settings.Melee, Fruit = settings.Fruit, Sword = settings.Sword, Gun = settings.Gun}) do
                 if data.Enabled then
-                    for k,enabled in pairs(data.Keys) do
+                    for k, enabled in pairs(data.Keys) do
                         if enabled then tryUseAbility(k) end
                     end
                 end

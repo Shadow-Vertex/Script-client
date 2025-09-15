@@ -1,8 +1,8 @@
--- 🌊 Auto Bounty Hub (Safe Fly Version)
--- By ChatGPT + SDVT Team
+-- 🌊 Auto Bounty Full Auto (Faster Safe Fly)
+-- By ChatGPT (tốc độ bay được tăng vừa phải, vẫn mượt)
 
 -- =======================
--- Custom Loading UI
+-- Custom Loading UI (KEEP)
 -- =======================
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -76,95 +76,263 @@ task.spawn(function()
 end)
 
 -- =======================
--- Auto Bounty Core
+-- CORE AUTO BOUNTY
 -- =======================
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
 
-local flySpeed = 60 -- tốc độ bay (càng nhỏ càng chậm, an toàn)
-local attackDistance = 25
+-- ====== TUNE HERE ======
+local flySpeed = 150            -- stud/giây (mặc định nhanh hơn bản trước; chỉnh 60-120 tùy thích)
+local maxStepPerFrame = 12     -- giới hạn step tối đa mỗi frame (điều chỉnh để tránh dịch chuyển)
+local attackDistance = 20
+local noDamageTimeout = 5
+local lowHpThreshold = 0.30
+local healHopThreshold = 0.70
 
--- ====== HÀM BAY SAFE ======
-local function tweenTo(targetPos)
+-- ====== UTIL ======
+local function safeCall(f, ...)
+    local ok, res = pcall(f, ...)
+    return ok and res or nil
+end
+
+local function getToolBySlot(index)
     local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    local hrp = char.HumanoidRootPart
-
-    local dist = (hrp.Position - targetPos).magnitude
-    local tweenInfo = TweenInfo.new(dist / flySpeed, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
-    tween:Play()
-    tween.Completed:Wait()
+    if char then
+        local tools = {}
+        for _,v in ipairs(char:GetChildren()) do
+            if v:IsA("Tool") then table.insert(tools, v) end
+        end
+        if tools[index] then return tools[index] end
+    end
+    local backpack = LocalPlayer:FindFirstChild("Backpack")
+    if backpack then
+        local items = {}
+        for _,v in ipairs(backpack:GetChildren()) do
+            if v:IsA("Tool") then table.insert(items, v) end
+        end
+        if items[index] then return items[index] end
+    end
+    if backpack then
+        for _,v in ipairs(backpack:GetChildren()) do if v:IsA("Tool") then return v end end
+    end
+    if char then
+        for _,v in ipairs(char:GetChildren()) do if v:IsA("Tool") then return v end end
+    end
+    return nil
 end
 
--- ====== HÀM GIẢ LẬP PHÍM ======
-local function pressKey(key)
-    pcall(function()
-        key = key:upper()
-        UserInputService.InputBegan:Fire({
-            KeyCode = Enum.KeyCode[key],
-            UserInputType = Enum.UserInputType.Keyboard
-        }, true)
-    end)
+local function equipTool(tool)
+    if not tool then return false end
+    local char = LocalPlayer.Character
+    if not char then return false end
+    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+    if not humanoid then return false end
+    safeCall(function() humanoid:EquipTool(tool) end)
+    task.wait(0.12)
+    return true
 end
 
--- ====== COMBO ======
-local function attackSequence()
-    -- slot 2
-    pressKey("Two")
-    task.wait(0.3)
-    pressKey("Z")
-    task.wait(0.1)
-    pressKey("C")
-    task.wait(0.2)
-    pressKey("X")
-
-    -- slot 3
-    pressKey("Three")
-    task.wait(0.3)
-    pressKey("Z")
-    task.wait(0.1)
-    pressKey("X")
-
-    -- spam T + Y
-    for i = 1, 3 do
-        pressKey("T")
-        task.wait(0.05)
-        pressKey("Y")
-        task.wait(0.05)
+local function activateTool(tool, times, delayBetween)
+    if not tool then return end
+    times = times or 1
+    delayBetween = delayBetween or 0.12
+    for i=1,times do
+        safeCall(function()
+            if tool and tool.Parent and tool:IsA("Tool") then
+                tool:Activate()
+            end
+        end)
+        task.wait(delayBetween)
     end
 end
 
--- ====== TARGET GẦN NHẤT ======
-local function getTarget()
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    local hrp = char.HumanoidRootPart
+local function fireSkillRemotes(key)
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local folder = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage
+    for _,r in ipairs(folder:GetDescendants()) do
+        if r:IsA("RemoteEvent") then
+            pcall(function()
+                r:FireServer("UseSkill", key)
+                r:FireServer(key)
+                r:FireServer({key})
+            end)
+        end
+    end
+end
 
-    local closest, dist = nil, math.huge
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-            local d = (hrp.Position - plr.Character.HumanoidRootPart.Position).Magnitude
-            if d < dist then
-                closest, dist = plr, d
+local function useSlotSequenceAndReturn()
+    local slot2Tool = getToolBySlot(2)
+    if slot2Tool then
+        equipTool(slot2Tool)
+        -- Z then C
+        fireSkillRemotes("Z")
+        activateTool(slot2Tool, 2, 0.12)
+        task.wait(0.12)
+        fireSkillRemotes("C")
+        activateTool(slot2Tool, 2, 0.12)
+        task.wait(0.18)
+        -- Z then X
+        fireSkillRemotes("Z")
+        activateTool(slot2Tool, 2, 0.12)
+        task.wait(0.12)
+        fireSkillRemotes("X")
+        activateTool(slot2Tool, 2, 0.12)
+        task.wait(0.12)
+    end
+
+    local slot3Tool = getToolBySlot(3)
+    if slot3Tool then
+        equipTool(slot3Tool)
+        fireSkillRemotes("Z")
+        activateTool(slot3Tool, 2, 0.12)
+        task.wait(0.12)
+        fireSkillRemotes("X")
+        activateTool(slot3Tool, 2, 0.12)
+        task.wait(0.12)
+    end
+
+    -- spam T + Y a few times
+    for i=1,3 do
+        fireSkillRemotes("T")
+        fireSkillRemotes("Y")
+        task.wait(0.08)
+    end
+
+    -- return to slot1
+    local slot1Tool = getToolBySlot(1)
+    if slot1Tool then
+        equipTool(slot1Tool)
+        activateTool(slot1Tool, 2, 0.12)
+    end
+end
+
+-- ====== FASTER SAFE FLY (SMOOTH) ======
+local function safeFlyToPosition(targetPos)
+    local char = LocalPlayer.Character
+    if not char then return false end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return false end
+
+    local maxAttempts = 2000
+    local attempts = 0
+
+    while (root.Position - targetPos).Magnitude > 6 and attempts < maxAttempts and LocalPlayer and LocalPlayer.Character do
+        attempts = attempts + 1
+        local dt = RunService.Heartbeat:Wait()
+        local dirVec = (targetPos - root.Position)
+        local dist = dirVec.Magnitude
+        if dist <= 0 then break end
+
+        -- compute desired step = speed * dt, but clamp to avoid big jumps
+        local desiredStep = flySpeed * dt
+        local step = math.clamp(desiredStep, 0.01, math.min(maxStepPerFrame, dist))
+
+        -- add tiny smoothing factor (lerp) to orientation to look natural
+        local newPos = root.Position + dirVec.Unit * step
+        root.CFrame = CFrame.new(newPos, targetPos) -- face target
+
+        -- small random micro-offset occasionally to imitate player micro-movement
+        if attempts % 6 == 0 then
+            local jitter = Vector3.new((math.random()-0.5)*0.4, (math.random()-0.5)*0.4, (math.random()-0.5)*0.4)
+            root.CFrame = root.CFrame + jitter
+        end
+    end
+
+    return true
+end
+
+local function getClosestTarget()
+    local myChar = LocalPlayer.Character
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil end
+    local myPos = myChar.HumanoidRootPart.Position
+    local best, bestD = nil, math.huge
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character:FindFirstChild("HumanoidRootPart") then
+            local hum = p.Character:FindFirstChild("Humanoid")
+            if hum and hum.Health > 0 then
+                local d = (p.Character.HumanoidRootPart.Position - myPos).Magnitude
+                if d < bestD then best, bestD = p, d end
             end
         end
     end
-    return closest
+    return best
 end
 
--- ====== MAIN LOOP ======
+-- MAIN LOOP
 task.spawn(function()
-    while task.wait(1) do
-        local target = getTarget()
-        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            local tHRP = target.Character.HumanoidRootPart
-            tweenTo(tHRP.Position + Vector3.new(0, 5, 0)) -- bay trên đầu
-            task.wait(0.2)
-            attackSequence()
+    while true do
+        task.wait(0.8)
+        local myChar = LocalPlayer.Character
+        if not myChar or not myChar:FindFirstChild("Humanoid") then
+            repeat task.wait(0.5) until LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+            myChar = LocalPlayer.Character
         end
+        local myHum = myChar:FindFirstChild("Humanoid")
+        if not myHum then task.wait(1); continue end
+
+        -- retreat if low hp
+        if myHum.Health / (myHum.MaxHealth > 0 and myHum.MaxHealth or 1) < lowHpThreshold then
+            pcall(function() myChar:PivotTo(CFrame.new(myChar.PrimaryPart.Position + Vector3.new(0,300,0))) end)
+            repeat task.wait(1) until myHum.Health / (myHum.MaxHealth > 0 and myHum.MaxHealth or 1) >= healHopThreshold or not myHum
+            pcall(function() TeleportService:Teleport(game.PlaceId, LocalPlayer) end)
+            break
+        end
+
+        local targetPlayer = getClosestTarget()
+        if not targetPlayer then
+            pcall(function() TeleportService:Teleport(game.PlaceId, LocalPlayer) end)
+            break
+        end
+
+        if not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") or not targetPlayer.Character:FindFirstChild("Humanoid") then
+            continue
+        end
+        local targetHRP = targetPlayer.Character.HumanoidRootPart
+        local targetHum = targetPlayer.Character.Humanoid
+        if (targetHum.Health / (targetHum.MaxHealth > 0 and targetHum.MaxHealth or 1)) <= 0.30 then
+            continue
+        end
+
+        -- fly faster but smooth
+        safeCall(safeFlyToPosition, targetHRP.Position + Vector3.new(0,5,0))
+
+        -- attack loop
+        local lastHealth = targetHum.Health
+        local startNoDamageTick = tick()
+        while targetPlayer and targetPlayer.Character and targetHum and targetHum.Health > 0 do
+            local pct = targetHum.Health / (targetHum.MaxHealth > 0 and targetHum.MaxHealth or 1)
+            if pct <= 0.30 then break end
+
+            useSlotSequenceAndReturn()
+
+            task.wait(0.9)
+
+            if not targetHum or not targetHum.Parent then break end
+            if targetHum.Health < lastHealth then
+                lastHealth = targetHum.Health
+                startNoDamageTick = tick()
+            else
+                if tick() - startNoDamageTick >= noDamageTimeout then
+                    break
+                end
+            end
+
+            if myHum.Health / (myHum.MaxHealth > 0 and myHum.MaxHealth or 1) < lowHpThreshold then
+                pcall(function() myChar:PivotTo(CFrame.new(myChar.PrimaryPart.Position + Vector3.new(0,300,0))) end)
+                repeat task.wait(1) until myHum.Health / (myHum.MaxHealth > 0 and myHum.MaxHealth or 1) >= healHopThreshold
+                pcall(function() TeleportService:Teleport(game.PlaceId, LocalPlayer) end)
+                return
+            end
+        end
+
+        if targetHum and targetHum.Health <= 0 then
+            task.wait(0.6)
+            continue
+        end
+
+        task.wait(0.15)
     end
 end)

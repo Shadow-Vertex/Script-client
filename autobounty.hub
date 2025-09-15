@@ -1,35 +1,25 @@
--- Auto Bounty & Skill Menu UI
+-- 🌊 Auto Bounty Hub (Full Code)
 -- By ChatGPT
 
--- Load Rayfield
+-- ====== LOAD RAYFIELD ======
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ====== SERVICES ======
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local TeleportService = game:GetService("TeleportService")
 
--- ====== SETTINGS ======
-local settings = {
-    Groups = {
-        Melee = {Enabled = false, Keys = {Z=false,X=false,C=false}},
-        Fruit = {Enabled = false, Keys = {Z=false,X=false,C=false,V=false,F=false}},
-        Sword = {Enabled = false, Keys = {Z=false,X=false}},
-        Gun   = {Enabled = false, Keys = {Z=false,X=false}},
-    }
-}
-
--- ====== FUNCTION DÙNG CHIÊU ======
+-- ====== DÙNG CHIÊU ======
 local function tryUseAbility(key)
     local char = LocalPlayer.Character
     if char then
         local tool = char:FindFirstChildOfClass("Tool")
         if tool then
             pcall(function() tool:Activate() end)
-            print("Dùng tool với phím", key)
         end
     end
-
     local remoteFolder = ReplicatedStorage:FindFirstChild("Remotes")
     if remoteFolder then
         for _, r in pairs(remoteFolder:GetDescendants()) do
@@ -40,58 +30,169 @@ local function tryUseAbility(key)
                 end)
             end
         end
-        print("Fired remote cho key:", key)
     end
 end
 
 -- ====== WINDOW ======
 local Window = Rayfield:CreateWindow({
-    Name = "Auto Bounty Skills Menu",
-    LoadingTitle = "Run script",
+    Name = "Auto Bounty Hub",
+    LoadingTitle = "Run Script",
     LoadingSubtitle = "Script SDVT Team",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "AutoBountyMenu",
-        FileName = "cfg"
+        FolderName = "AutoBountyHub",
+        FileName = "Config"
     }
 })
 
--- ====== TAB ======
-local Tab = Window:CreateTab("Setting", 11602940797)
+-- =============================
+-- TAB 1: SETTING SKILL
+-- =============================
+local Tab1 = Window:CreateTab("Setting", 11602940797)
 
--- ====== HÀM TẠO NHÓM CON ======
 local function createGroup(tab, groupName, keys)
-    -- Toggle chính
     local mainToggle = tab:CreateToggle({
         Name = groupName,
         CurrentValue = false,
+        Flag = groupName .. "_Enabled",
         Callback = function(v)
-            settings.Groups[groupName].Enabled = v
-            -- show/hide toggles con
-            for _,toggle in pairs(settings.Groups[groupName].SubToggles or {}) do
+            for _,toggle in pairs(mainToggle.SubToggles or {}) do
                 toggle.Visible = v
             end
         end
     })
 
-    -- Tạo toggles con (ẩn lúc đầu)
-    settings.Groups[groupName].SubToggles = {}
+    mainToggle.SubToggles = {}
     for _,k in ipairs(keys) do
         local sub = tab:CreateToggle({
             Name = "Use " .. k,
             CurrentValue = false,
+            Flag = groupName .. "_Key_" .. k,
             Callback = function(v)
-                settings.Groups[groupName].Keys[k] = v
                 if v then tryUseAbility(k) end
             end
         })
-        sub.Visible = false
-        table.insert(settings.Groups[groupName].SubToggles, sub)
+        sub.Visible = mainToggle.CurrentValue
+        table.insert(mainToggle.SubToggles, sub)
     end
 end
 
--- ====== TẠO NHÓM ======
-createGroup(Tab,"Melee",{"Z","X","C"})
-createGroup(Tab,"Fruit",{"Z","X","C","V","F"})
-createGroup(Tab,"Sword",{"Z","X"})
-createGroup(Tab,"Gun",{"Z","X"})
+createGroup(Tab1,"Melee",{"Z","X","C"})
+createGroup(Tab1,"Fruit",{"Z","X","C","V","F"})
+createGroup(Tab1,"Sword",{"Z","X"})
+createGroup(Tab1,"Gun",{"Z","X"})
+
+-- =============================
+-- TAB 2: AUTO BOUNTY
+-- =============================
+local Tab2 = Window:CreateTab("Auto Bounty", 4483362458)
+
+local AutoBounty = false
+local CurrentTarget = nil
+
+local function getAlivePlayers()
+    local list = {}
+    for _,p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+            table.insert(list,p)
+        end
+    end
+    return list
+end
+
+local function tweenToTarget(target)
+    if not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local tween = TweenService:Create(hrp, TweenInfo.new(2,Enum.EasingStyle.Linear), {
+        CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0,5,0)
+    })
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+local function useAllSelectedSkills()
+    local groups = {"Melee","Fruit","Sword","Gun"}
+    for _,g in ipairs(groups) do
+        if Rayfield.Flags[g .. "_Enabled"].CurrentValue then
+            for key,_ in pairs(Rayfield.Flags) do
+                if key:find(g.."_Key_") and Rayfield.Flags[key].CurrentValue then
+                    local k = key:match("Key_(.+)")
+                    if k then tryUseAbility(k) end
+                end
+            end
+        end
+    end
+end
+
+local function hopServer()
+    TeleportService:Teleport(game.PlaceId, LocalPlayer)
+end
+
+local function runAutoBounty()
+    while AutoBounty do
+        local players = getAlivePlayers()
+        if #players == 0 then
+            hopServer()
+            break
+        end
+
+        for _,target in ipairs(players) do
+            if not AutoBounty then break end
+            CurrentTarget = target
+            local humanoid = target.Character:FindFirstChild("Humanoid")
+            if not humanoid then continue end
+
+            local maxHealth = humanoid.MaxHealth
+            local lastHealth = humanoid.Health
+
+            -- Nếu target còn <30% máu thì bỏ
+            if humanoid.Health/maxHealth <= 0.3 then
+                continue
+            end
+
+            tweenToTarget(target)
+
+            local start = tick()
+            while AutoBounty and target.Character and humanoid and humanoid.Health > 0 do
+                local hpPercent = humanoid.Health / maxHealth
+
+                -- Check %HP
+                if hpPercent <= 0.3 then
+                    print("Target dưới 30% máu, bỏ qua")
+                    break
+                end
+                if hpPercent >= 0.7 and humanoid.Health > lastHealth then
+                    print("Target hồi máu >70%, hop server")
+                    hopServer()
+                    return
+                end
+
+                useAllSelectedSkills()
+                task.wait(1)
+
+                if humanoid.Health == lastHealth then
+                    if tick() - start > 5 then
+                        print("Không mất máu sau 5s, đổi target")
+                        break
+                    end
+                else
+                    lastHealth = humanoid.Health
+                    start = tick()
+                end
+            end
+        end
+    end
+end
+
+Tab2:CreateToggle({
+    Name = "Enable Auto Bounty",
+    CurrentValue = false,
+    Flag = "AutoBounty_Enabled",
+    Callback = function(v)
+        AutoBounty = v
+        if v then
+            task.spawn(runAutoBounty)
+        end
+    end
+})

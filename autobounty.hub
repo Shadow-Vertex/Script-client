@@ -1,4 +1,4 @@
--- 🌊 Auto Bounty Hub (With Custom Loading UI)
+-- 🌊 Auto Bounty Hub (Safe Fly Version)
 -- By ChatGPT
 
 -- =======================
@@ -76,7 +76,7 @@ task.spawn(function()
 end)
 
 -- =======================
--- Load Rayfield sau khi UI chạy
+-- Load Rayfield + Auto Load Config
 -- =======================
 task.delay(3, function()
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -115,6 +115,17 @@ task.delay(3, function()
         end
     end
 
+    -- ====== Safe Fly ======
+    local function safeFlyTo(char, targetPos)
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if not root then return end
+        local speed = 60 -- stud/giây (40-80 an toàn)
+        while settings.AutoBounty and targetPos and (root.Position - targetPos).Magnitude > 6 do
+            local dir = (targetPos - root.Position).Unit
+            root.CFrame = root.CFrame + dir * speed * RunService.Heartbeat:Wait()
+        end
+    end
+
     -- ====== Rayfield Window ======
     local Window = Rayfield:CreateWindow({
         Name = "Auto Bounty Hub",
@@ -127,20 +138,30 @@ task.delay(3, function()
         }
     })
 
+    -- 👇 TỰ ĐỘNG LOAD CẤU HÌNH ĐÃ LƯU
+    Window:LoadConfiguration()
+
     -- ====== Tab 1 Setting ======
     local Tab1 = Window:CreateTab("Settings", 11602940797)
 
     local function createSkillSection(tab, title, tbl, keys)
-        tab:CreateToggle({
+        local toggle = tab:CreateToggle({
             Name = title,
             CurrentValue = tbl.Enabled,
-            Callback = function(v) tbl.Enabled = v end
+            Flag = "Toggle_" .. title:gsub(" ", ""), -- 👈 Thêm Flag để lưu riêng
+            Callback = function(v)
+                tbl.Enabled = v
+            end
         })
+
         for _,k in ipairs(keys) do
             tab:CreateToggle({
                 Name = "Use " .. k,
                 CurrentValue = tbl.Keys[k],
-                Callback = function(v) tbl.Keys[k] = v end
+                Flag = "Key_" .. title:gsub(" ", "") .. "_" .. k, -- 👈 Thêm Flag để lưu riêng
+                Callback = function(v)
+                    tbl.Keys[k] = v
+                end
             })
         end
     end
@@ -155,7 +176,10 @@ task.delay(3, function()
     Tab2:CreateToggle({
         Name = "Enable Auto Bounty",
         CurrentValue = settings.AutoBounty,
-        Callback = function(v) settings.AutoBounty = v end
+        Flag = "AutoBounty", -- 👈 Thêm Flag để lưu riêng
+        Callback = function(v)
+            settings.AutoBounty = v
+        end
     })
 
     -- ====== Core Auto Bounty ======
@@ -183,15 +207,11 @@ task.delay(3, function()
             end
             if not target then continue end
 
-            -- bay đến target
+            -- bay đến target bằng safeFly
             local root = myChar:FindFirstChild("HumanoidRootPart")
             local targetRoot = target:FindFirstChild("HumanoidRootPart")
             if root and targetRoot then
-                local tween = TweenService:Create(root, TweenInfo.new(1, Enum.EasingStyle.Linear), {
-                    CFrame = targetRoot.CFrame * CFrame.new(0,0,5)
-                })
-                tween:Play()
-                tween.Completed:Wait()
+                safeFlyTo(myChar, targetRoot.Position)
             end
 
             -- đánh theo setting

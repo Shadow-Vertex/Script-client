@@ -11,15 +11,16 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- ====== SETTINGS ======
 local settings = {
-    UseMelee = false,
-    UseFruit = false,
-    UseSword = false,
-    UseGun   = false,
+    Groups = {
+        Melee = {Enabled = false, Keys = {Z=false,X=false,C=false}},
+        Fruit = {Enabled = false, Keys = {Z=false,X=false,C=false,V=false,F=false}},
+        Sword = {Enabled = false, Keys = {Z=false,X=false}},
+        Gun   = {Enabled = false, Keys = {Z=false,X=false}},
+    }
 }
 
 -- ====== FUNCTION DÙNG CHIÊU ======
 local function tryUseAbility(key)
-    -- Thử activate tool hiện đang cầm
     local char = LocalPlayer.Character
     if char then
         local tool = char:FindFirstChildOfClass("Tool")
@@ -29,7 +30,6 @@ local function tryUseAbility(key)
         end
     end
 
-    -- Nếu game có remote skill thì sửa chỗ này cho đúng tên remote
     local remoteFolder = ReplicatedStorage:FindFirstChild("Remotes")
     if remoteFolder then
         for _, r in pairs(remoteFolder:GetDescendants()) do
@@ -59,58 +59,39 @@ local Window = Rayfield:CreateWindow({
 -- ====== TAB ======
 local Tab = Window:CreateTab("Setting", 11602940797)
 
--- ========== MELEE ==========
-Tab:CreateToggle({
-    Name = "Melee (Z, X, C)",
-    CurrentValue = settings.UseMelee,
-    Callback = function(v)
-        settings.UseMelee = v
-        if v then
-            tryUseAbility("Z")
-            tryUseAbility("X")
-            tryUseAbility("C")
+-- ====== HÀM TẠO NHÓM CON ======
+local function createGroup(tab, groupName, keys)
+    -- Toggle chính
+    local mainToggle = tab:CreateToggle({
+        Name = groupName,
+        CurrentValue = false,
+        Callback = function(v)
+            settings.Groups[groupName].Enabled = v
+            -- show/hide toggles con
+            for _,toggle in pairs(settings.Groups[groupName].SubToggles or {}) do
+                toggle.Visible = v
+            end
         end
-    end
-})
+    })
 
--- ========== FRUIT ==========
-Tab:CreateToggle({
-    Name = "Fruit (Z, X, C, V, F)",
-    CurrentValue = settings.UseFruit,
-    Callback = function(v)
-        settings.UseFruit = v
-        if v then
-            tryUseAbility("Z")
-            tryUseAbility("X")
-            tryUseAbility("C")
-            tryUseAbility("V")
-            tryUseAbility("F")
-        end
+    -- Tạo toggles con (ẩn lúc đầu)
+    settings.Groups[groupName].SubToggles = {}
+    for _,k in ipairs(keys) do
+        local sub = tab:CreateToggle({
+            Name = "Use " .. k,
+            CurrentValue = false,
+            Callback = function(v)
+                settings.Groups[groupName].Keys[k] = v
+                if v then tryUseAbility(k) end
+            end
+        })
+        sub.Visible = false
+        table.insert(settings.Groups[groupName].SubToggles, sub)
     end
-})
+end
 
--- ========== SWORD ==========
-Tab:CreateToggle({
-    Name = "Sword (Z, X)",
-    CurrentValue = settings.UseSword,
-    Callback = function(v)
-        settings.UseSword = v
-        if v then
-            tryUseAbility("Z")
-            tryUseAbility("X")
-        end
-    end
-})
-
--- ========== GUN ==========
-Tab:CreateToggle({
-    Name = "Gun (Z, X)",
-    CurrentValue = settings.UseGun,
-    Callback = function(v)
-        settings.UseGun = v
-        if v then
-            tryUseAbility("Z")
-            tryUseAbility("X")
-        end
-    end
-})
+-- ====== TẠO NHÓM ======
+createGroup(Tab,"Melee",{"Z","X","C"})
+createGroup(Tab,"Fruit",{"Z","X","C","V","F"})
+createGroup(Tab,"Sword",{"Z","X"})
+createGroup(Tab,"Gun",{"Z","X"})

@@ -47,8 +47,8 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local autoKillAura = false
 local attackRadius = 200 -- Tấn công tất cả trong 200 studs
 local equipKey = "1" -- PHÍM DUY NHẤT DÙNG: EQUIP MELEE 1
-local equipInterval = 0.5 -- Spam equip mỗi 0.012s (~83 lần/giây) — gần giới hạn Roblox
-local maxTargetDistance = 5 -- Khoảng cách tối đa để "dán sát" target (để aura hit)
+local equipInterval = 0.5 -- delay spam equip
+local maxTargetDistance = 5 -- Khoảng cách tối đa để "dán sát" target
 
 -- Lấy danh sách tất cả player trong bán kính
 local function getPlayersInRadius(maxDist)
@@ -69,35 +69,31 @@ local function getPlayersInRadius(maxDist)
     return targets
 end
 
--- Nhấn phím equipKey (chỉ dùng VirtualInputManager — đảm bảo gửi đúng)
+-- Nhấn phím equipKey
 local function pressEquip()
     pcall(function()
         VirtualInputManager:SendKeyEvent(true, equipKey, false, game)
-        task.wait(0.003) -- Rất ngắn, nhưng đủ để game nhận
+        task.wait(0.003)
         VirtualInputManager:SendKeyEvent(false, equipKey, false, game)
     end)
 end
 
--- Di chuyển đến vị trí sát sau target (trong phạm vi 5 studs)
+-- Di chuyển đến vị trí sát target
 local function moveClosestTo(target)
     if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then return end
     local hrp = LocalPlayer.Character.HumanoidRootPart
     local thrp = target.Character.HumanoidRootPart
     if not hrp or not thrp then return end
-
-    -- Tính vector hướng từ target về phía sau (dán sát)
-    local direction = (hrp.Position - thrp.Position).Unit * 1.6 -- Dán sát ~1.6 studs phía sau
+    local direction = (hrp.Position - thrp.Position).Unit * 1.6
     local newPos = thrp.Position + direction
     pcall(function()
-        hrp.CFrame = CFrame.new(newPos, thrp.Position) -- Hướng mặt vào target
+        hrp.CFrame = CFrame.new(newPos, thrp.Position)
     end)
 end
 
--- Hàm tấn công AURA — chỉ spam equip 1
+-- Hàm tấn công AURA
 local function attackAllTargets(targets)
     if #targets == 0 then return end
-
-    -- Chọn target gần nhất để dán sát (giảm lag, tăng hiệu quả aura)
     local closestTarget = targets[1]
     for _, plr in ipairs(targets) do
         local d = (plr.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
@@ -105,16 +101,9 @@ local function attackAllTargets(targets)
             closestTarget = plr
         end
     end
-
-    -- Bắt đầu chu kỳ AURA
     while autoKillAura do
-        -- Dán sát target gần nhất
         moveClosestTo(closestTarget)
-
-        -- Spam equip 1 cực nhanh
         pressEquip()
-
-        -- Kiểm tra lại target còn sống không
         local aliveTargets = {}
         for _, plr in ipairs(targets) do
             if plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Humanoid") then
@@ -124,11 +113,7 @@ local function attackAllTargets(targets)
                 end
             end
         end
-
-        -- Nếu không còn ai sống → dừng
         if #aliveTargets == 0 then break end
-
-        -- Cập nhật target mới nếu cần
         if #aliveTargets > 0 then
             closestTarget = aliveTargets[1]
             for _, plr in ipairs(aliveTargets) do
@@ -138,8 +123,6 @@ local function attackAllTargets(targets)
                 end
             end
         end
-
-        -- Chờ trước khi spam tiếp
         task.wait(equipInterval)
     end
 end
@@ -152,14 +135,12 @@ Tab1:CreateToggle({
     Callback = function(state)
         autoKillAura = state
         if not state then return end
-
-        -- Liên tục kiểm tra và tấn công
         while autoKillAura do
             local targets = getPlayersInRadius(attackRadius)
             if #targets > 0 then
                 task.spawn(attackAllTargets, targets)
             end
-            task.wait(0.1) -- Kiểm tra lại mỗi 0.1s để giảm tải
+            task.wait(0.1)
         end
     end
 })
@@ -169,6 +150,7 @@ Tab1:CreateToggle({
 ----------------------------------------------------------
 local Tab2 = Window:CreateTab("TP")
 
+local TweenService = game:GetService("TweenService")
 local tween
 local function tweenTo(targetPos, speed)
     local plr = Players.LocalPlayer
@@ -177,12 +159,12 @@ local function tweenTo(targetPos, speed)
         local distance = (hrp.Position - targetPos).Magnitude
         local travelTime = math.max(distance / speed, 0.3)
         local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear)
+        if tween then tween:Cancel() end
         tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
         tween:Play()
     end
 end
 
--- Nhanh
 Tab2:CreateButton({
     Name = "Tp Green Tree (Nhanh)",
     Callback = function()
@@ -190,7 +172,6 @@ Tab2:CreateButton({
     end
 })
 
--- Vừa phải
 Tab2:CreateButton({
     Name = "Tp Green Tree (Vừa phải)",
     Callback = function()
@@ -198,7 +179,6 @@ Tab2:CreateButton({
     end
 })
 
--- Stop Tween
 Tab2:CreateButton({
     Name = "Stop Tween",
     Callback = function()
@@ -242,7 +222,6 @@ Tab3:CreateButton({
 -- Tab 4: Tọa độ
 ----------------------------------------------------------
 local Tab4 = Window:CreateTab("Tọa độ")
-
 local coordLabel = Tab4:CreateLabel("Tọa độ: chưa copy")
 
 Tab4:CreateButton({

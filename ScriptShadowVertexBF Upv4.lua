@@ -8,7 +8,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- Tạo cửa sổ chính
 local Window = Rayfield:CreateWindow({
-    Name = "SDVT SCRIPT # Update 1o | 14/09/2025",
+    Name = "SDVT SCRIPT # Update 1 | 14/09/2025",
     LoadingTitle = "SDVT Hub",
     LoadingSubtitle = "by ChatGPT",
     ConfigurationSaving = {
@@ -45,12 +45,11 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 
 -- Cấu hình AURA ONLY
 local autoKillAura = false
-local attackRadius = 200 -- Tấn công tất cả trong 200 studs
-local equipKey = "1" -- PHÍM DUY NHẤT DÙNG: EQUIP MELEE 1
-local equipInterval = 0.5 -- delay spam equip
-local maxTargetDistance = 5 -- Khoảng cách tối đa để "dán sát" target
+local attackRadius = 200
+local equipKey = "1"
+local equipInterval = 0.5
+local maxTargetDistance = 5
 
--- Lấy danh sách tất cả player trong bán kính
 local function getPlayersInRadius(maxDist)
     if not (LocalPlayer and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) then return {} end
     local myPos = LocalPlayer.Character.HumanoidRootPart.Position
@@ -69,7 +68,6 @@ local function getPlayersInRadius(maxDist)
     return targets
 end
 
--- Nhấn phím equipKey
 local function pressEquip()
     pcall(function()
         VirtualInputManager:SendKeyEvent(true, equipKey, false, game)
@@ -78,7 +76,6 @@ local function pressEquip()
     end)
 end
 
--- Di chuyển đến vị trí sát target
 local function moveClosestTo(target)
     if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then return end
     local hrp = LocalPlayer.Character.HumanoidRootPart
@@ -91,7 +88,6 @@ local function moveClosestTo(target)
     end)
 end
 
--- Hàm tấn công AURA
 local function attackAllTargets(targets)
     if #targets == 0 then return end
     local closestTarget = targets[1]
@@ -127,7 +123,6 @@ local function attackAllTargets(targets)
     end
 end
 
--- Toggle Auto Kill Aura
 Tab1:CreateToggle({
     Name = "Auto Kill AURA (MELEE 1 ONLY)",
     CurrentValue = false,
@@ -152,13 +147,15 @@ local Tab2 = Window:CreateTab("TP")
 
 local TweenService = game:GetService("TweenService")
 local tween
+
 local function tweenTo(targetPos, speed)
     local plr = Players.LocalPlayer
     if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
         local hrp = plr.Character.HumanoidRootPart
         local distance = (hrp.Position - targetPos).Magnitude
-        local travelTime = math.max(distance / speed, 0.3)
-        local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear)
+        local safeSpeed = math.min(speed, 600)
+        local travelTime = math.max(distance / safeSpeed, 0.5)
+        local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         if tween then tween:Cancel() end
         tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
         tween:Play()
@@ -176,6 +173,13 @@ Tab2:CreateButton({
     Name = "Tp Green Tree (Vừa phải)",
     Callback = function()
         tweenTo(Vector3.new(3029.78, 2280.25, -7314.13), 400)
+    end
+})
+
+Tab2:CreateButton({
+    Name = "Tp Green Tree (Slower)",
+    Callback = function()
+        tweenTo(Vector3.new(3029.78, 2280.25, -7314.13), 200)
     end
 })
 

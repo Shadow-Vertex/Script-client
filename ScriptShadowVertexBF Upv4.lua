@@ -8,7 +8,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- Tạo cửa sổ chính
 local Window = Rayfield:CreateWindow({
-    Name = "SDVT SCRIPT # Update 1 | 14/09/2025",
+    Name = "SDVT SCRIPT # Update 1o | 14/09/2025",
     LoadingTitle = "SDVT Hub",
     LoadingSubtitle = "by ChatGPT",
     ConfigurationSaving = {

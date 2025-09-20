@@ -1,0 +1,96 @@
+-- ✅ Anti AFK Menu Script
+-- Dán vào executor
+
+-- 📂 Services
+local Players = game:GetService("Players")
+local VirtualUser = game:GetService("VirtualUser")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+
+-- ⚡ UI đơn giản
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local Frame = Instance.new("Frame", ScreenGui)
+local Title = Instance.new("TextLabel", Frame)
+local ToggleBtn = Instance.new("TextButton", Frame)
+local Status = Instance.new("TextLabel", Frame)
+
+ScreenGui.Name = "AntiAFK_UI"
+
+Frame.Size = UDim2.new(0, 200, 0, 120)
+Frame.Position = UDim2.new(0.05, 0, 0.3, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.Active = true
+Frame.Draggable = true
+
+Title.Text = "⚡ Anti AFK Menu"
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.TextColor3 = Color3.fromRGB(255,255,0)
+Title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+
+ToggleBtn.Text = "▶ BẬT"
+ToggleBtn.Size = UDim2.new(0.5, -5, 0, 30)
+ToggleBtn.Position = UDim2.new(0, 5, 0, 40)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+ToggleBtn.TextColor3 = Color3.new(1,1,1)
+
+Status.Text = "Trạng thái: OFF"
+Status.Size = UDim2.new(1, -10, 0, 30)
+Status.Position = UDim2.new(0, 5, 0, 80)
+Status.TextColor3 = Color3.fromRGB(255,255,255)
+Status.BackgroundTransparency = 1
+
+-- ⚡ Chức năng
+local isOn = false
+
+-- Ngăn kick AFK
+player.Idled:Connect(function()
+    if isOn then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end
+end)
+
+-- Auto di chuyển vòng vòng + click
+task.spawn(function()
+    while true do
+        task.wait(2)
+        if isOn and hrp then
+            -- Random di chuyển AWSD
+            local dir = math.random(1,4)
+            if dir == 1 then
+                hrp.CFrame = hrp.CFrame * CFrame.new(1,0,0) -- A
+            elseif dir == 2 then
+                hrp.CFrame = hrp.CFrame * CFrame.new(-1,0,0) -- D
+            elseif dir == 3 then
+                hrp.CFrame = hrp.CFrame * CFrame.new(0,0,1) -- W
+            else
+                hrp.CFrame = hrp.CFrame * CFrame.new(0,0,-1) -- S
+            end
+
+            -- Giả lập click
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new(math.random(100,400), math.random(100,400)))
+        end
+    end
+end)
+
+-- Bật tắt menu
+ToggleBtn.MouseButton1Click:Connect(function()
+    isOn = not isOn
+    if isOn then
+        ToggleBtn.Text = "⏸ TẮT"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(170,0,0)
+        Status.Text = "Trạng thái: ON"
+        Status.TextColor3 = Color3.fromRGB(0,255,0)
+    else
+        ToggleBtn.Text = "▶ BẬT"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
+        Status.Text = "Trạng thái: OFF"
+        Status.TextColor3 = Color3.fromRGB(255,0,0)
+    end
+end)
+
+print("✅ Anti-AFK Menu Loaded!")

@@ -1,0 +1,201 @@
+-- 🔒 Check Game ID
+local correctPlaceId = 127742093697776
+if game.PlaceId ~= correctPlaceId then
+    warn("❌ Sai game, teleport sang "..correctPlaceId)
+    game:GetService("TeleportService"):Teleport(correctPlaceId, game:GetService("Players").LocalPlayer)
+    return
+end
+
+-- 📊 Fake Loading
+local player = game:GetService("Players").LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+
+local screenGui = Instance.new("ScreenGui", CoreGui)
+local textLabel = Instance.new("TextLabel", screenGui)
+textLabel.Size = UDim2.new(0.3, 0, 0.1, 0)
+textLabel.Position = UDim2.new(0.35, 0, 0.45, 0)
+textLabel.BackgroundTransparency = 0.5
+textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+textLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+textLabel.Font = Enum.Font.SourceSansBold
+textLabel.TextScaled = true
+textLabel.Text = "Loading 0%"
+
+for i = 1, 100 do
+    textLabel.Text = "Loading " .. i .. "%"
+    task.wait(0.03)
+end
+screenGui:Destroy()
+
+-- 🌟 Load Rayfield
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "🌱 Plant Vs Brainrot 🌱",
+    LoadingTitle = "Plant Vs Brainrot",
+    LoadingSubtitle = "by SDVT",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "PlantVsBrainrot",
+        FileName = "Config"
+    },
+    Discord = {
+        Enabled = true,
+        Invite = "GQcQFjqzTc",
+        RememberJoins = true
+    },
+    KeySystem = false
+})
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- ================= TAB 1 INFO =================
+local Tab1 = Window:CreateTab("📜 Info", 4483362458)
+Tab1:CreateLabel("Script: Plant Vs Brainrot")
+Tab1:CreateLabel("Player: " .. player.Name)
+Tab1:CreateLabel("UserId: " .. player.UserId)
+
+-- ================= TAB 2 SHOP SEED =================
+local Tab2 = Window:CreateTab("🌾 Shop Seed", 4483362458)
+
+local selectedSeeds = {}
+local buyDelay = 0.5
+local autoBuy = false
+local ultraFast = false
+
+-- Delay chỉnh tay
+Tab2:CreateSlider({
+    Name = "🕒 Buy Delay",
+    Range = {0.01, 2},
+    Increment = 0.01,
+    Suffix = "s",
+    CurrentValue = 0.5,
+    Callback = function(Value)
+        buyDelay = Value
+    end,
+})
+
+-- Danh sách seeds
+local seeds = {
+    "Cactus Seed", "Strawberry Seed", "Pumpkin Seed", "Sunflower Seed",
+    "Dragon Fruit Seed", "Eggplant Seed", "Watermelon Seed", "Cocotank Seed",
+    "Carnivorous Plant Seed", "Mr Carrot Seed", "Tomatrio Seed"
+}
+
+for _, seed in ipairs(seeds) do
+    Tab2:CreateToggle({
+        Name = seed,
+        CurrentValue = false,
+        Callback = function(Value)
+            selectedSeeds[seed] = Value
+        end,
+    })
+end
+
+-- Auto Buy (theo delay)
+Tab2:CreateToggle({
+    Name = "🌱 Auto Buy Seeds",
+    CurrentValue = false,
+    Callback = function(Value)
+        autoBuy = Value
+        if autoBuy then
+            task.spawn(function()
+                while autoBuy do
+                    for seed, enabled in pairs(selectedSeeds) do
+                        if enabled then
+                            local args = { {seed, "\7"} }
+                            pcall(function()
+                                ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
+                            end)
+                            task.wait(buyDelay)
+                        end
+                    end
+                    task.wait()
+                end
+            end)
+        end
+    end,
+})
+
+-- Ultra Fast Buy (spam max speed)
+Tab2:CreateToggle({
+    Name = "⚡ Ultra Fast Buy Loop",
+    CurrentValue = false,
+    Callback = function(Value)
+        ultraFast = Value
+        if ultraFast then
+            task.spawn(function()
+                while ultraFast do
+                    for seed, enabled in pairs(selectedSeeds) do
+                        if enabled then
+                            local args = { {seed, "\7"} }
+                            pcall(function()
+                                ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
+                            end)
+                        end
+                    end
+                    task.wait() -- spam nhanh nhất
+                end
+            end)
+        end
+    end,
+})
+
+-- ================= TAB 3 COLLECT =================
+local Tab3 = Window:CreateTab("📦 Collect", 4483362458)
+
+local collectDelay = 5
+local autoCollect = false
+local ultraCollect = false
+
+-- Delay chỉnh tay
+Tab3:CreateSlider({
+    Name = "🕒 Collect Delay",
+    Range = {2, 30},
+    Increment = 1,
+    Suffix = "s",
+    CurrentValue = 5,
+    Callback = function(Value)
+        collectDelay = Value
+    end,
+})
+
+-- Auto Collect
+Tab3:CreateToggle({
+    Name = "📦 Auto Collect",
+    CurrentValue = false,
+    Callback = function(Value)
+        autoCollect = Value
+        if autoCollect then
+            task.spawn(function()
+                while autoCollect do
+                    local args = { {[2] = "5"} }
+                    pcall(function()
+                        ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
+                    end)
+                    task.wait(collectDelay)
+                end
+            end)
+        end
+    end,
+})
+
+-- Ultra Fast Collect
+Tab3:CreateToggle({
+    Name = "⚡ Ultra Fast Collect",
+    CurrentValue = false,
+    Callback = function(Value)
+        ultraCollect = Value
+        if ultraCollect then
+            task.spawn(function()
+                while ultraCollect do
+                    local args = { {[2] = "5"} }
+                    pcall(function()
+                        ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
+                    end)
+                    task.wait() -- spam nhanh nhất
+                end
+            end)
+        end
+    end,
+})

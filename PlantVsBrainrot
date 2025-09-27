@@ -1,31 +1,64 @@
--- Plant Vs Brainrot - Debug-friendly Rayfield script
--- Chạy trong game 127742093697776
-if game.PlaceId ~= 127742093697776 then
-    warn("Script không hỗ trợ game này")
+-- 🌱 Plant Vs Brainrot Script
+-- UI: Rayfield (https://sirius.menu/rayfield)
+
+-- 🔒 Check Game ID
+local correctPlaceId = 127742093697776
+if game.PlaceId ~= correctPlaceId then
+    warn("❌ Sai game, teleport sang "..correctPlaceId)
+    game:GetService("TeleportService"):Teleport(correctPlaceId, game.Players.LocalPlayer)
     return
 end
 
+-- ⚡ Fake Loading UI
+local CoreGui = game:GetService("CoreGui")
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PVSB_Loading"
+ScreenGui.Parent = CoreGui
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.ResetOnSpawn = false
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0.4,0,0.05,0)
+Frame.Position = UDim2.new(0.3,0,0.45,0)
+Frame.BackgroundColor3 = Color3.fromRGB(40,40,40)
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
+
+local Bar = Instance.new("Frame")
+Bar.Size = UDim2.new(0,0,1,0)
+Bar.BackgroundColor3 = Color3.fromRGB(0,255,100)
+Bar.BorderSizePixel = 0
+Bar.Parent = Frame
+
+local Text = Instance.new("TextLabel")
+Text.Size = UDim2.new(0.4,0,0.05,0)
+Text.Position = UDim2.new(0.3,0,0.52,0)
+Text.BackgroundTransparency = 1
+Text.TextColor3 = Color3.fromRGB(255,255,255)
+Text.TextScaled = true
+Text.Font = Enum.Font.FredokaOne
+Text.Text = "Loading... 0%"
+Text.Parent = ScreenGui
+
+for i = 1,100 do
+    Bar.Size = UDim2.new(i/100,0,1,0)
+    Text.Text = "Loading... "..i.."%"
+    task.wait(0.02)
+end
+
+ScreenGui:Destroy() -- xoá loading UI xong mới load menu
+
+-- ⚙️ Load UI
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local RunService = game:GetService("RunService")
+local Player = game.Players.LocalPlayer
 
--- load Rayfield
-local ok, Rayfield = pcall(function()
-    return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
-end)
-if not ok or not Rayfield then
-    warn("Không tải được Rayfield UI")
-    return
-end
+-- ⚙️ Config
+local autoBuy, buyDelay = false, 1
+local selectedSeeds = {}
+local autoCollect, collectDelay = false, 5
 
--- CONFIG
-local buyDelay = 1          -- 0.01 - 2 (set từ UI)
-local collectDelay = 5      -- 2 - 30 (set từ UI)
-local loopBuyRunning = false
-local loopCollectRunning = false
-
--- seed list + suffix mapping (cactus dùng "\7", các seed khác dùng "\a")
+-- 🌱 Danh sách Seed
 local seedList = {
     "Cactus Seed",
     "Strawberry Seed",
@@ -39,310 +72,105 @@ local seedList = {
     "Mr Carrot Seed",
     "Tomatrio Seed"
 }
-local seedSuffix = {}
-for _, s in ipairs(seedList) do seedSuffix[s] = "\a" end
-seedSuffix["Cactus Seed"] = "\7"
 
--- UI
+-- 🪴 UI Window
 local Window = Rayfield:CreateWindow({
-    Name = "🧟 Plant Vs Brainrot (Debug)",
+    Name = "🌱 Plant Vs Brainrot",
     LoadingTitle = "Plant Vs Brainrot",
-    LoadingSubtitle = "Debug UI",
-    ConfigurationSaving = {Enabled = false},
-    KeySystem = false
+    LoadingSubtitle = "by Dev",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "PlantVsBrainrot",
+        FileName = "Config"
+    }
 })
 
--- HELPERS
-local function findBridge()
-    -- try exact names first
-    local bridge = ReplicatedStorage:FindFirstChild("BridgeNet2") or ReplicatedStorage:FindFirstChild("BridgeNet") or ReplicatedStorage:FindFirstChild("Bridge")
-    if bridge then return bridge end
-    -- search for any child with 'bridge' in name
-    for _, c in ipairs(ReplicatedStorage:GetChildren()) do
-        if tostring(c.Name):lower():find("bridge") then
-            return c
-        end
-    end
-    return nil
-end
+-- =============================
+-- 📌 Tab 1: Info
+-- =============================
+local Tab1 = Window:CreateTab("ℹ️ Info")
+Tab1:CreateParagraph({
+    Title = "🌱 Plant Vs Brainrot",
+    Content = "Script auto buy & auto collect.\nPlayer: " .. Player.Name .. " | ID: " .. Player.UserId
+})
 
-local function findDataRemote()
-    local bridge = findBridge()
-    if not bridge then
-        return nil, "Bridge folder not found in ReplicatedStorage"
-    end
-    -- prefer dataRemoteEvent / dataRemote
-    for _, desc in ipairs(bridge:GetDescendants()) do
-        if desc:IsA("RemoteEvent") or desc:IsA("RemoteFunction") then
-            local n = tostring(desc.Name):lower()
-            if n:find("data") or n:find("remote") or n:find("event") then
-                return desc
-            end
-        end
-    end
-    -- fallback: first RemoteEvent/Function child
-    for _, child in ipairs(bridge:GetChildren()) do
-        if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
-            return child
-        end
-    end
-    return nil, "No RemoteEvent/Function found under Bridge"
-end
+-- =============================
+-- 📌 Tab 2: Shop Seed
+-- =============================
+local Tab2 = Window:CreateTab("🛒 Shop Seed")
 
-local function tryFireBuy(remote, seed, suffix)
-    -- try multiple arg formats, return true, info or false, err
-    local attempts = {}
-
-    -- nested table like your examples
-    table.insert(attempts, function() remote:FireServer({{seed, suffix}}) end)
-    -- explicit nested keyed
-    table.insert(attempts, function() remote:FireServer({ [1] = { [1] = seed, [2] = suffix } }) end)
-    -- array with inner table
-    table.insert(attempts, function() remote:FireServer({ seed, suffix }) end)
-    -- separate args
-    table.insert(attempts, function() remote:FireServer(seed, suffix) end)
-    -- single table arg (flatten)
-    table.insert(attempts, function() remote:FireServer({ [1] = seed, [2] = suffix }) end)
-
-    local lastErr = nil
-    for i,fn in ipairs(attempts) do
-        local ok, err = pcall(fn)
-        if ok then
-            return true, "attempt "..i
-        else
-            lastErr = err
-        end
-    end
-    return false, tostring(lastErr)
-end
-
-local function tryCollect(remote, collectValueStr)
-    -- user asked to send exactly: local args = {{ [2] = "5" }} then FireServer(unpack(args))
-    local ok, err = pcall(function()
-        remote:FireServer({ [2] = tostring(collectValueStr) })
-    end)
-    if ok then return true, "exact-format" end
-
-    -- alternative: nested as one element table (what some games expect)
-    ok, err = pcall(function()
-        remote:FireServer({ { [2] = tostring(collectValueStr) } })
-    end)
-    if ok then return true, "nested-format" end
-
-    -- fallback: try simpler signature
-    ok, err = pcall(function() remote:FireServer(tostring(collectValueStr)) end)
-    if ok then return true, "plain-format" end
-
-    return false, tostring(err)
-end
-
--- UI: Info tab
-local infoTab = Window:CreateTab("ℹ️ Info")
-local infoSec = infoTab:CreateSection("Info / Debug")
-infoSec:CreateParagraph({Title = "Player", Content = player.Name .. " | ID: " .. tostring(player.UserId)})
-infoSec:CreateButton({Name = "List ReplicatedStorage children (console)", Callback = function()
-    print("=== ReplicatedStorage children ===")
-    for i,c in ipairs(ReplicatedStorage:GetChildren()) do
-        print(i, c.Name, c.ClassName)
-    end
-    Rayfield:CreateNotification({Title = "Listed", Content = "Check executor console for ReplicatedStorage children", Duration = 2})
-end})
-infoSec:CreateButton({Name = "Detect Bridge & Remote", Callback = function()
-    local bridge = findBridge()
-    if not bridge then
-        Rayfield:CreateNotification({Title = "Bridge NOT found", Content = "No Bridge* in ReplicatedStorage", Duration = 3})
-        print("[Detect] Bridge not found")
-        return
-    end
-    print("[Detect] Bridge:", bridge:GetFullName())
-    local remote, err = findDataRemote()
-    if not remote then
-        Rayfield:CreateNotification({Title = "Remote NOT found", Content = tostring(err), Duration = 3})
-        print("[Detect] Remote not found:", err)
-        return
-    end
-    Rayfield:CreateNotification({Title = "Remote found", Content = remote:GetFullName(), Duration = 3})
-    print("[Detect] Remote:", remote:GetFullName(), "Class:", remote.ClassName)
-end})
-
-infoSec:CreateButton({Name = "Test Buy (Cactus) once", Callback = function()
-    local remote, err = findDataRemote()
-    if not remote then
-        Rayfield:CreateNotification({Title = "Test Buy", Content = "Remote not found: "..tostring(err), Duration = 3})
-        print("TestBuy: remote not found:", err)
-        return
-    end
-    local seed = "Cactus Seed"
-    local suffix = seedSuffix[seed] or "\a"
-    local ok, info = tryFireBuy(remote, seed, suffix)
-    Rayfield:CreateNotification({Title = "Test Buy", Content = ok and ("ok: "..tostring(info)) or ("fail: "..tostring(info)), Duration = 3})
-    print("TestBuy result:", ok, info)
-end})
-
-infoSec:CreateButton({Name = "Test Collect (5) once", Callback = function()
-    local remote, err = findDataRemote()
-    if not remote then
-        Rayfield:CreateNotification({Title = "Test Collect", Content = "Remote not found: "..tostring(err), Duration = 3})
-        print("TestCollect: remote not found:", err)
-        return
-    end
-    local ok, info = tryCollect(remote, "5")
-    Rayfield:CreateNotification({Title = "Test Collect", Content = ok and ("ok: "..tostring(info)) or ("fail: "..tostring(info)), Duration = 3})
-    print("TestCollect result:", ok, info)
-end})
-
--- UI: Shop Seed tab
-local shopTab = Window:CreateTab("🌱 Shop Seed")
-local shopSec = shopTab:CreateSection("Settings")
-shopSec:CreateSlider({
-    Name = "Buy Delay (s)",
+Tab2:CreateSlider({
+    Name = "⏱ Buy Delay",
     Range = {0.01, 2},
     Increment = 0.01,
-    CurrentValue = buyDelay,
-    Callback = function(val) buyDelay = val end
+    Suffix = "s",
+    CurrentValue = 1,
+    Callback = function(Value) buyDelay = Value end,
 })
--- toggles per seed (user ticks seeds they want auto-buy)
-local seedToggles = {}
-local seedsSection = shopTab:CreateSection("Seeds (tick to include in AutoBuy)")
-for _, s in ipairs(seedList) do
-    seedToggles[s] = false
-    seedsSection:CreateToggle({
-        Name = s,
+
+for _, seedName in ipairs(seedList) do
+    Tab2:CreateToggle({
+        Name = seedName,
         CurrentValue = false,
-        Callback = function(v) seedToggles[s] = v end
+        Callback = function(Value)
+            selectedSeeds[seedName] = Value
+        end,
     })
 end
 
-local controlSection = shopTab:CreateSection("AutoBuy Control")
-controlSection:CreateButton({ Name = "Start AutoBuy (only ticked seeds)", Callback = function()
-    if loopBuyRunning then
-        Rayfield:CreateNotification({Title = "AutoBuy", Content = "Already running", Duration = 2})
-        return
-    end
-    local remote, err = findDataRemote()
-    if not remote then
-        Rayfield:CreateNotification({Title = "AutoBuy", Content = "Remote not found: "..tostring(err), Duration = 3})
-        print("StartAutoBuy: remote not found:", err)
-        return
-    end
-    loopBuyRunning = true
-    Rayfield:CreateNotification({Title = "AutoBuy", Content = "Started", Duration = 2})
-    task.spawn(function()
-        local counter = 0
-        while loopBuyRunning do
-            for seed, enabled in pairs(seedToggles) do
-                if loopBuyRunning == false then break end
-                if enabled then
-                    local suffix = seedSuffix[seed] or "\a"
-                    local ok, info = tryFireBuy(remote, seed, suffix)
-                    if ok then
-                        counter = counter + 1
-                        -- print occasional progress to console
-                        if counter % 10 == 0 then
-                            print(("AutoBuy: bought %d items, last=%s (%s)"):format(counter, seed, info))
+Tab2:CreateToggle({
+    Name = "🌱 Auto Buy Seeds",
+    CurrentValue = false,
+    Callback = function(Value)
+        autoBuy = Value
+        if autoBuy then
+            task.spawn(function()
+                while autoBuy do
+                    for seed, enabled in pairs(selectedSeeds) do
+                        if enabled then
+                            local args = { {seed, "\7"} }
+                            pcall(function()
+                                ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
+                            end)
+                            task.wait(buyDelay)
                         end
-                    else
-                        print(("AutoBuy: failed for %s -> %s"):format(seed, tostring(info)))
                     end
-                    -- respect delay
-                    local elapsed = 0
-                    while elapsed < buyDelay and loopBuyRunning do
-                        elapsed = elapsed + 0.05
-                        RunService.Heartbeat:Wait()
-                    end
+                    task.wait()
                 end
-            end
-            -- small pause to avoid tight loop if no seeds selected
-            if next(seedToggles) == nil then
-                task.wait(0.5)
-            end
+            end)
         end
-        Rayfield:CreateNotification({Title = "AutoBuy", Content = "Stopped", Duration = 2})
-    end)
-end})
+    end,
+})
 
-controlSection:CreateButton({ Name = "Stop AutoBuy", Callback = function()
-    if not loopBuyRunning then
-        Rayfield:CreateNotification({Title = "AutoBuy", Content = "Not running", Duration = 2})
-        return
-    end
-    loopBuyRunning = false
-end})
+-- =============================
+-- 📌 Tab 3: Collected
+-- =============================
+local Tab3 = Window:CreateTab("📦 Collected")
 
--- UI: Collected tab
-local colTab = Window:CreateTab("📦 Collected")
-local colSec = colTab:CreateSection("Collect Settings")
-colSec:CreateSlider({
-    Name = "Collect Delay (s)",
+Tab3:CreateSlider({
+    Name = "⏱ Collect Delay",
     Range = {2, 30},
     Increment = 1,
-    CurrentValue = collectDelay,
-    Callback = function(v) collectDelay = v end
+    Suffix = "s",
+    CurrentValue = 5,
+    Callback = function(Value) collectDelay = Value end,
 })
-colSec:CreateToggle({
-    Name = "Auto Collect (tick to enable)",
+
+Tab3:CreateToggle({
+    Name = "📦 Auto Collect",
     CurrentValue = false,
-    Callback = function(v)
-        if v then
-            if loopCollectRunning then
-                Rayfield:CreateNotification({Title = "Collect", Content = "Already running", Duration = 2})
-                return
-            end
-            local remote, err = findDataRemote()
-            if not remote then
-                Rayfield:CreateNotification({Title = "Collect", Content = "Remote not found: "..tostring(err), Duration = 3})
-                print("StartCollect: remote not found:", err)
-                return
-            end
-            loopCollectRunning = true
-            Rayfield:CreateNotification({Title = "Collect", Content = "Started", Duration = 2})
+    Callback = function(Value)
+        autoCollect = Value
+        if autoCollect then
             task.spawn(function()
-                while loopCollectRunning do
-                    -- as requested, send exactly this structure by default
-                    local ok, info = false, nil
-                    -- First try exact one-element table with [2] = "5" wrapped in a parent array to match user's sample
-                    local success, err = pcall(function()
-                        remote:FireServer({ { [2] = tostring(5) } })
+                while autoCollect do
+                    local args = { {[2] = "5"} }
+                    pcall(function()
+                        ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
                     end)
-                    if success then
-                        ok = true; info = "exact nested"
-                    else
-                        -- try alternative: direct table without outer array (some servers expect this)
-                        success, err = pcall(function()
-                            remote:FireServer({ [2] = tostring(5) })
-                        end)
-                        if success then ok = true; info = "flat table" else
-                            -- try even more fallback
-                            success, err = pcall(function() remote:FireServer("5") end)
-                            if success then ok = true; info = "string-arg" else
-                                info = tostring(err)
-                            end
-                        end
-                    end
-
-                    if ok then
-                        print("Collect: fired OK (", info, ")")
-                    else
-                        print("Collect failed:", info)
-                    end
-
-                    local elapsed = 0
-                    while elapsed < collectDelay and loopCollectRunning do
-                        elapsed = elapsed + 0.2
-                        task.wait(0.2)
-                    end
+                    task.wait(collectDelay)
                 end
-                Rayfield:CreateNotification({Title = "Collect", Content = "Stopped", Duration = 2})
             end)
-        else
-            loopCollectRunning = false
         end
-    end
+    end,
 })
-
--- Final notification
-Rayfield:CreateNotification({Title = "Plant Vs Brainrot", Content = "Loaded (debug mode). Use Test buttons & console.", Duration = 3})
-
--- Helpful hint printed to console
-print("Plant Vs Brainrot (debug) loaded.")
-print("Use 'List ReplicatedStorage children' and 'Detect Bridge & Remote' in Info tab first.")

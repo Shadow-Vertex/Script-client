@@ -1,201 +1,195 @@
--- 🔒 Check Game ID
-local correctPlaceId = 127742093697776
-if game.PlaceId ~= correctPlaceId then
-    warn("❌ Sai game, teleport sang "..correctPlaceId)
-    game:GetService("TeleportService"):Teleport(correctPlaceId, game:GetService("Players").LocalPlayer)
+```lua
+-- 🌱 Plant Vs Brainrot Full Script
+-- Hỗ trợ PC + Mobile (nút mở menu có thể kéo thả)
+
+-- 🔹 Kiểm tra game ID
+local GameId = game.GameId
+if GameId ~= 127742093697776 then
+    game:GetService("TeleportService"):Teleport(127742093697776, game.Players.LocalPlayer)
     return
 end
 
--- 📊 Fake Loading
-local player = game:GetService("Players").LocalPlayer
+local player = game.Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 
-local screenGui = Instance.new("ScreenGui", CoreGui)
-local textLabel = Instance.new("TextLabel", screenGui)
-textLabel.Size = UDim2.new(0.3, 0, 0.1, 0)
-textLabel.Position = UDim2.new(0.35, 0, 0.45, 0)
-textLabel.BackgroundTransparency = 0.5
-textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-textLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-textLabel.Font = Enum.Font.SourceSansBold
-textLabel.TextScaled = true
-textLabel.Text = "Loading 0%"
+-- ===============================
+-- ⏳ Loading GUI
+-- ===============================
+local LoadingGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+LoadingGui.Name = "PVZ_Loading"
 
-for i = 1, 100 do
-    textLabel.Text = "Loading " .. i .. "%"
-    task.wait(0.03)
-end
-screenGui:Destroy()
+local Frame = Instance.new("Frame", LoadingGui)
+Frame.Size = UDim2.new(0.4, 0, 0.1, 0)
+Frame.Position = UDim2.new(0.3, 0, 0.45, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BorderSizePixel = 0
 
--- 🌟 Load Rayfield
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+local Bar = Instance.new("Frame", Frame)
+Bar.Size = UDim2.new(0, 0, 1, 0)
+Bar.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+Bar.BorderSizePixel = 0
 
-local Window = Rayfield:CreateWindow({
-    Name = "🌱 Plant Vs Brainrot 🌱",
-    LoadingTitle = "Plant Vs Brainrot",
-    LoadingSubtitle = "by SDVT",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "PlantVsBrainrot",
-        FileName = "Config"
-    },
-    Discord = {
-        Enabled = true,
-        Invite = "GQcQFjqzTc",
-        RememberJoins = true
-    },
-    KeySystem = false
-})
+local Label = Instance.new("TextLabel", Frame)
+Label.Size = UDim2.new(1, 0, 1, 0)
+Label.BackgroundTransparency = 1
+Label.Text = "Loading... 0%"
+Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+Label.Font = Enum.Font.SourceSansBold
+Label.TextScaled = true
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- ================= TAB 1 INFO =================
-local Tab1 = Window:CreateTab("📜 Info", 4483362458)
-Tab1:CreateLabel("Script: Plant Vs Brainrot")
-Tab1:CreateLabel("Player: " .. player.Name)
-Tab1:CreateLabel("UserId: " .. player.UserId)
-
--- ================= TAB 2 SHOP SEED =================
-local Tab2 = Window:CreateTab("🌾 Shop Seed", 4483362458)
-
-local selectedSeeds = {}
-local buyDelay = 0.5
-local autoBuy = false
-local ultraFast = false
-
--- Delay chỉnh tay
-Tab2:CreateSlider({
-    Name = "🕒 Buy Delay",
-    Range = {0.01, 2},
-    Increment = 0.01,
-    Suffix = "s",
-    CurrentValue = 0.5,
-    Callback = function(Value)
-        buyDelay = Value
-    end,
-})
-
--- Danh sách seeds
-local seeds = {
-    "Cactus Seed", "Strawberry Seed", "Pumpkin Seed", "Sunflower Seed",
-    "Dragon Fruit Seed", "Eggplant Seed", "Watermelon Seed", "Cocotank Seed",
-    "Carnivorous Plant Seed", "Mr Carrot Seed", "Tomatrio Seed"
-}
-
-for _, seed in ipairs(seeds) do
-    Tab2:CreateToggle({
-        Name = seed,
-        CurrentValue = false,
-        Callback = function(Value)
-            selectedSeeds[seed] = Value
-        end,
-    })
+for i = 1,100 do
+    Bar.Size = UDim2.new(i/100, 0, 1, 0)
+    Label.Text = "Loading... "..i.."%"
+    wait(0.03)
 end
 
--- Auto Buy (theo delay)
-Tab2:CreateToggle({
-    Name = "🌱 Auto Buy Seeds",
-    CurrentValue = false,
-    Callback = function(Value)
-        autoBuy = Value
-        if autoBuy then
-            task.spawn(function()
-                while autoBuy do
-                    for seed, enabled in pairs(selectedSeeds) do
-                        if enabled then
-                            local args = { {seed, "\7"} }
-                            pcall(function()
-                                ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
-                            end)
-                            task.wait(buyDelay)
-                        end
-                    end
-                    task.wait()
-                end
-            end)
+LoadingGui:Destroy()
+
+-- ===============================
+-- 📜 Fluent UI
+-- ===============================
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local Window = Fluent:CreateWindow({
+    Title = "🌱 Plant Vs Brainrot",
+    SubTitle = "by SDVT",
+    TabWidth = 120,
+    Size = UDim2.fromOffset(500, 350),
+    Acrylic = true,
+    Theme = "Dark"
+})
+
+-- ===============================
+-- 🛒 Tab 1: Shop Seed
+-- ===============================
+local tab1 = Window:AddTab({ Title = "Shop Seed", Icon = "shopping-cart" })
+
+tab1:AddToggle("Cactus", {Title = "🌵 Cactus Seed", Default = false}):OnChanged(function(state)
+    if state then
+        local args = {{"Cactus Seed","\a"}}
+        game.ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
+    end
+end)
+
+tab1:AddToggle("Pumpkin", {Title = "🎃 Pumpkin Seed", Default = false}):OnChanged(function(state)
+    if state then
+        local args = {{"Pumpkin Seed","\a"}}
+        game.ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
+    end
+end)
+
+tab1:AddToggle("Sunflower", {Title = "🌻 Sunflower Seed", Default = false}):OnChanged(function(state)
+    if state then
+        local args = {{"Sunflower Seed","\a"}}
+        game.ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
+    end
+end)
+
+tab1:AddToggle("DragonFruit", {Title = "🐉 Dragon Fruit Seed", Default = false}):OnChanged(function(state)
+    if state then
+        local args = {{"Dragon Fruit Seed","\a"}}
+        game.ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
+    end
+end)
+
+-- ===============================
+-- 🌾 Tab 2: Collect
+-- ===============================
+local tab2 = Window:AddTab({ Title = "Collected", Icon = "leaf" })
+
+local delayValue = 2
+tab2:AddSlider("DelaySlider", {
+    Title = "⏱️ Delay",
+    Min = 2, Max = 30, Default = 2, Rounding = 0
+}):OnChanged(function(value) delayValue = value end)
+
+local running = false
+tab2:AddToggle("AutoCollect", {Title = "✅ Collect", Default = false}):OnChanged(function(state)
+    running = state
+    while running do
+        local args = { {[2] = "\004"} } -- collect
+        game.ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
+        wait(delayValue)
+    end
+end)
+
+-- ===============================
+-- ⚔️ Tab 3: Kill Aura
+-- ===============================
+local tab3 = Window:AddTab({ Title = "Kill Aura", Icon = "swords" })
+
+local auraRunning = false
+tab3:AddToggle("KillAura", {Title = "💀 Kill Aura", Default = false}):OnChanged(function(state)
+    auraRunning = state
+    while auraRunning do
+        for _, mob in pairs(workspace:GetChildren()) do
+            if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Name ~= player.Name then
+                local args = {
+                    [1] = mob,
+                    [2] = 100
+                }
+                game.ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
+            end
         end
-    end,
-})
+        wait(0.2)
+    end
+end)
 
--- Ultra Fast Buy (spam max speed)
-Tab2:CreateToggle({
-    Name = "⚡ Ultra Fast Buy Loop",
-    CurrentValue = false,
-    Callback = function(Value)
-        ultraFast = Value
-        if ultraFast then
-            task.spawn(function()
-                while ultraFast do
-                    for seed, enabled in pairs(selectedSeeds) do
-                        if enabled then
-                            local args = { {seed, "\7"} }
-                            pcall(function()
-                                ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
-                            end)
-                        end
-                    end
-                    task.wait() -- spam nhanh nhất
-                end
-            end)
-        end
-    end,
-})
+-- ===============================
+-- 📱 Nút mở/đóng menu (mobile drag)
+-- ===============================
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "SeedHubMobile"
 
--- ================= TAB 3 COLLECT =================
-local Tab3 = Window:CreateTab("📦 Collect", 4483362458)
+local button = Instance.new("TextButton", gui)
+button.Size = UDim2.new(0, 100, 0, 40)
+button.Position = UDim2.new(0.02, 0, 0.8, 0)
+button.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.Font = Enum.Font.SourceSansBold
+button.TextSize = 18
+button.Text = "🌱 Menu"
 
-local collectDelay = 5
-local autoCollect = false
-local ultraCollect = false
+local opened = true
+button.MouseButton1Click:Connect(function()
+    opened = not opened
+    Window:Minimize(not opened)
+end)
 
--- Delay chỉnh tay
-Tab3:CreateSlider({
-    Name = "🕒 Collect Delay",
-    Range = {2, 30},
-    Increment = 1,
-    Suffix = "s",
-    CurrentValue = 5,
-    Callback = function(Value)
-        collectDelay = Value
-    end,
-})
+-- 🔥 Drag support
+local UserInputService = game:GetService("UserInputService")
+local dragging, dragInput, dragStart, startPos
 
--- Auto Collect
-Tab3:CreateToggle({
-    Name = "📦 Auto Collect",
-    CurrentValue = false,
-    Callback = function(Value)
-        autoCollect = Value
-        if autoCollect then
-            task.spawn(function()
-                while autoCollect do
-                    local args = { {[2] = "5"} }
-                    pcall(function()
-                        ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
-                    end)
-                    task.wait(collectDelay)
-                end
-            end)
-        end
-    end,
-})
+local function update(input)
+    local delta = input.Position - dragStart
+    button.Position = UDim2.new(
+        startPos.X.Scale, startPos.X.Offset + delta.X,
+        startPos.Y.Scale, startPos.Y.Offset + delta.Y
+    )
+end
 
--- Ultra Fast Collect
-Tab3:CreateToggle({
-    Name = "⚡ Ultra Fast Collect",
-    CurrentValue = false,
-    Callback = function(Value)
-        ultraCollect = Value
-        if ultraCollect then
-            task.spawn(function()
-                while ultraCollect do
-                    local args = { {[2] = "5"} }
-                    pcall(function()
-                        ReplicatedStorage.BridgeNet2.dataRemoteEvent:FireServer(unpack(args))
-                    end)
-                    task.wait() -- spam nhanh nhất
-                end
-            end)
-        end
-    end,
-})
+button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = button.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+button.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+```
